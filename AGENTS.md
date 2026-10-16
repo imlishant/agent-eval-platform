@@ -15,9 +15,9 @@ Evaluate any AI harness × model and answer: did the agent improve, and how sure
 - One container (Node + Python), SQLite file volume, `docker compose up`
 
 ## Key decisions (see PLAN.md §2)
-- Models: `claude-haiku-5-5` and `claude-sonnet-5-5` via Anthropic SDK
+- Models: no paid API. One OpenAI-compatible adapter; local Ollama `qwen3:8b` + hosted free tier (Groq/Gemini). See PLAN.md §2
 - No Redis, no Postgres, no LiteLLM proxy
-- N = 3 trials; 20 tasks; paired bootstrap for CIs
+- N = 3 trials; 20 tasks; paired bootstrap for CIs; failure analysis included
 - Config ID = SHA of JSON content; git is version history
 
 ## Commands
@@ -49,3 +49,4 @@ Evaluate any AI harness × model and answer: did the agent improve, and how sure
 | Harness / model adapter interfaces | `PLAN.md §4` |
 | Task format | `PLAN.md §7` and `tasks/README.md` (when it exists) |
 | Statistics method | `PLAN.md §8` |
+| Why a decision was made | `docs/DECISIONS.md` |
