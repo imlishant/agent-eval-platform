@@ -14,6 +14,7 @@ import time
 
 from .graders import run_graders
 from .harnesses import get_harness
+from .models import ProviderError
 from .sandbox import trial_dirs
 from .schema import Config, Task, TrialContext
 
@@ -24,19 +25,24 @@ def run(spec: dict) -> dict:
     harness = get_harness(config.harness)
     started = time.time()
 
+    meta = {"task_id": task.id, "task_hash": task.content_hash(), "config_id": config.config_id(),
+            "harness_version": harness.version, "trial_index": spec.get("trial_index", 0)}
+
     with trial_dirs(task) as (sandbox, home):
-        ctx = TrialContext(task, config, sandbox, home, spec.get("trial_index", 0))
-        trace = harness.run_trial(ctx)
+        ctx = TrialContext(task, config, sandbox, home, meta["trial_index"])
+        try:
+            trace = harness.run_trial(ctx)
+        except ProviderError as e:
+            # infra failure: not the agent's fault, so no score; left out of comparisons
+            return {**meta, "status": "invalid", "error": str(e), "score": None, "passed": None,
+                    "grades": [], "usage": {}, "latency_ms": int((time.time() - started) * 1000),
+                    "trace": []}
         grades = run_graders(task.graders, trace, sandbox)
 
     score = sum(g.score for g in grades) / len(grades) if grades else 0.0
     return {
+        **meta,
         "status": "done",
-        "task_id": task.id,
-        "task_hash": task.content_hash(),
-        "config_id": config.config_id(),
-        "harness_version": harness.version,
-        "trial_index": ctx.trial_index,
         "score": score,
         "passed": all(g.passed for g in grades),
         "grades": [g.__dict__ for g in grades],

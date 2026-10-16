@@ -1,10 +1,12 @@
 """Harness registry. Adding a harness = one class + one line here."""
 
 from .base import HarnessAdapter
+from .baseline import BaselineHarness
 from .mock import MockHarness
 
 HARNESSES: dict[str, type[HarnessAdapter]] = {
     MockHarness.id: MockHarness,
+    BaselineHarness.id: BaselineHarness,
 }
 
 

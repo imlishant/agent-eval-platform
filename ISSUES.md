@@ -1,10 +1,6 @@
 # Open issues
 <!-- open items only; closed ones live in the merge commit that said `Closes <id>` -->
 
-## FEAT-1 · Runner core: schemas, sandbox, mock harness, exact grader      [feature · in-progress]  parent: main
-- Goal: `python -m evalrunner.run_trial` runs 1 task with the mock harness and prints {trace, grades, score} JSON.
-- Check: pytest — mock "solve" scores 1, mock "fail" scores 0, sandbox is fresh per trial.
-- Branch: feat/runner-core
-
-## FEAT-2 · Baseline harness + OpenAI-compatible model adapter               [feature · in-progress]  parent: main
-- Check: real model (Groq/local) solves the sample task; trace has model_call/tool_call/tool_result; 429 retried.
+## FEAT-4 · Graders (file_check, unit_tests, llm_judge) + 20 tasks + grader self-tests   [feature · ready]  parent: main
+- Check: every deterministic task: reference run scores 1, empty run scores 0 (pytest). Judge validated with kappa script.
+- Branch: feat/graders-tasks
