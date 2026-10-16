@@ -1,0 +1,30 @@
+# Changelog
+
+Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 = every PDF deliverable done).
+Each entry names the branch it came from; all branches are kept on GitHub.
+
+## [Unreleased]
+- Hermes Agent harness adapter (`feat/hermes-adapter`).
+
+## [0.4.0] - 2026-10-16 · Graders and task set (`feat/graders-tasks`)
+- Graders: `file_check` (contains / regex / JSON fields, partial credit), `unit_tests` (uses the task's own tests),
+  `llm_judge` (yes/no rubric, temperature 0, reason per criterion).
+- 20 tasks: 8 code, 3 exact answer, 3 skill-sensitive, 3 memory-sensitive (two sessions), 3 judge-graded.
+- Grader self-check: every deterministic task scores 1.0 on its reference solution and 0.0 on an empty run.
+- Judge validation: 15 labelled outputs, accuracy and Cohen's kappa (provisional until labels are human-reviewed).
+- Judge model: `gemma-4-26b-a4b-it` (DECISIONS D11).
+- README and this changelog (`docs/readme-changelog`).
+
+## [0.3.0] - 2026-10-16 · Runner, baseline harness, model adapter (`feat/runner-core`)
+- Shared schemas (config, task, trace, grade); config ID = hash of content.
+- Per-trial isolation: fresh sandbox folder and private HOME.
+- `mock` harness (no model) and `baseline` harness (tool-calling loop with bash, read_file, write_file; skills; memory).
+- `openai_compat` model adapter for any OpenAI-compatible endpoint; retries with backoff; exhausted retries mark the trial `invalid`.
+- `exact_match` grader; `run_trial` CLI that prints one JSON result.
+
+## [0.2.0] - 2026-10-16 · Provider and Hermes spikes (`feat/spikes`)
+- Verified tool calling on local `qwen3:8b`, Groq and Gemini free tiers; measured rate limits.
+- Verified Hermes Agent headless with a per-trial `HERMES_HOME` (DECISIONS D6–D10).
+
+## [0.1.0] - 2026-10-16 · Plan (`chore/replan-free-providers`)
+- Plan v2 built from the assignment PDF; free providers only; decision log started.

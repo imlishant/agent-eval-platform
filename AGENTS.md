@@ -34,6 +34,7 @@ Evaluate any AI harness × model and answer: did the agent improve, and how sure
 
 ## Hard rules
 - `change-flow: on` — branch freely, commit; merge/push need user approval.
+- **Keep every branch, forever.** Never delete a merged branch (local or remote). Push every branch to `origin` when it is created and after each commit, so GitHub shows the full history of work. Merge with `--no-ff`.
 - Never push secrets or API keys; `.env` is gitignored.
 - Adding a harness or model = writing one adapter + one dict/registry entry. Never change platform core for this.
 - Do not call `docker compose up` in CI without a `--build` clean run verified first.
