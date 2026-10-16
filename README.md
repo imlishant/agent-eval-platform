@@ -7,21 +7,22 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 tasks under two configurations, several times each, grades every run, and compares the two with confidence
 intervals, so a real improvement can be told apart from noise.
 
-> **Version 0.4.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
+> **Version 0.5.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
 
 ## Progress
 
 | Area | Status | Notes |
 |---|---|---|
 | Plan, decisions, provider spikes | ✅ done | [PLAN.md](PLAN.md), [docs/DECISIONS.md](docs/DECISIONS.md) |
-| Trial runner: sandbox, trace, retries, invalid-trial handling | ✅ done | `runner/evalrunner/run_trial.py` |
+| Trial runner: trace, retries, invalid-trial handling | ✅ done | `runner/evalrunner/run_trial.py` |
+| Isolation: OS sandbox for agent processes, secret scrubbing | ✅ done (macOS) | `runner/evalrunner/isolation.py`, DECISIONS D14 |
 | Harnesses: `mock`, `baseline` | ✅ done | `runner/evalrunner/harnesses/` |
-| Harness: `hermes` (Hermes Agent, required) | 🔜 next | headless run verified in a spike (DECISIONS D9) |
+| Harness: `hermes` (Hermes Agent, required) | ✅ done | `harnesses/hermes.py`, DECISIONS D9, D15 |
 | Model adapter: any OpenAI-compatible endpoint (Ollama, Groq, Gemini, …) | ✅ done | `runner/evalrunner/models/` |
 | Graders: exact_match, file_check, unit_tests, llm_judge | ✅ done | each deterministic grader self-tested |
 | 20 tasks (code, exact, skill, memory, judge) | ✅ done | `tasks/` |
 | Judge validation (agreement with human labels, Cohen's kappa) | 🟡 provisional | labels await human review |
-| API (NestJS + SQLite): experiments, worker pool, stats, export | ⬜ todo | |
+| API (NestJS + SQLite): experiments, worker pool, stats, export | 🔜 next | |
 | UI (Vue 3): Run, Compare, Trial pages | ⬜ todo | |
 | Failure analysis (stretch) | ⬜ todo | |
 | Experiment + report | ⬜ todo | `docs/EXPERIMENT.md` |
@@ -44,13 +45,17 @@ Vue UI  →  NestJS API  →  SQLite
   JSON file in `configs/`. Its ID is a hash of its content, so the same settings always give the same ID; git keeps the history.
 - **Task** = a folder in `tasks/` with the prompt(s), starting files, how it is graded, and a reference solution.
 - **Trial** = one task × one config × one repetition. Agents are non-deterministic, so every task runs N times.
-- A provider failure (rate limit, server error) is retried; if it still fails the trial is marked **invalid** and
-  left out of the comparison instead of being counted as a wrong answer.
+- A provider failure (rate limit, server error) or a harness crash is retried; if it still fails the trial is marked
+  **invalid** and left out of the comparison instead of being counted as a wrong answer.
+- **Isolation:** every agent process runs in an OS sandbox that can only touch its own trial folder. This is not
+  optional: in testing, an agent with a terminal searched the disk and copied a task's reference answer
+  ([DECISIONS D14](docs/DECISIONS.md)). API keys are scrubbed from every result.
 
 ## Setup
 
 Requirements: [uv](https://docs.astral.sh/uv/) (installs Python 3.13 for you). Optional: [Ollama](https://ollama.com) for a
-local model, [Hermes Agent](https://hermes-agent.nousresearch.com) for the `hermes` harness.
+local model, [Hermes Agent](https://hermes-agent.nousresearch.com) for the `hermes` harness (its first trial prepares a
+shared base in `~/.cache/evalrunner/hermes-base`, ~350 MB, once). Native runs use the macOS sandbox; on other systems use Docker.
 
 ```bash
 git clone <this repo> && cd <repo>

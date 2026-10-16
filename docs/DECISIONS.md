@@ -73,3 +73,31 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - code 8 (unit_tests/file_check), exact 3, skill 3 (made-up house formats + fake internal CLI, so the model cannot know them without the skill), memory 3 (fact in session 1, needed in session 2), judge 3.
 - Grader trust: every deterministic task scores 1.0 on its reference solution and 0.0 on an empty run (pytest, 34 cases). unit_tests graders use the task's own copy of the tests, so an agent editing tests cannot fake a pass.
 - top-city: data generated so the highest-cost city is not the most frequent one (no shortcut answer).
+
+## D14 · 2026-10-16 · Finding: an agent escaped folder isolation and read the answer key → OS sandbox
+- What happened: Hermes, memory off, task `remember-codeword` (needs a fact from session 1). It ran `find /`,
+  then `ls -R` on this repo, read `tasks/remember-codeword/reference/files/codeword.txt`, copied it and scored 1.0.
+  It also ran `env`, printing API keys into the trace.
+- Why it matters: a contaminated score looks exactly like a real one. Every comparison would have been wrong in an
+  unknowable direction, and exported traces would have contained secrets.
+- Fix (all tested, `tests/test_isolation.py`, each attack re-played):
+  1. Every agent process (Hermes, baseline `bash`, and the agent's code during `unit_tests` grading) runs under
+     macOS `sandbox-exec`: no read/write of the home folder, this repo, or other trials; only its own trial folder
+     plus read-only tool installs. Linux/Docker: separate unprivileged user (Docker step); otherwise every result
+     says `isolation: folder-only`, never silent.
+  2. Secrets: every result is scrubbed (`[REDACTED:NAME]`) before leaving the runner; Hermes gets only its own key.
+  3. `unit_tests` hardening: planted `conftest.py`/pytest config removed; pytest pass also needs a JUnit report
+     with >0 tests and 0 failures (so `os._exit(0)` on import cannot pass).
+  4. A harness that crashes (no result) is `invalid`, not a 0 for the agent.
+- Re-run under the sandbox: same trial scores 0.0 (honest); memory-on version scores 1.0.
+
+## D15 · 2026-10-16 · Hermes inside the sandbox: shared prepared base + per-session homes when memory is off
+- Hermes builds a dependency environment per `HERMES_HOME` on first use (needs writes the sandbox denies). One base
+  home is prepared once, unsandboxed, at `~/.cache/evalrunner/hermes-base`; each trial links `installs/` to it
+  read-only (only lock/lease files writable, so an agent cannot alter the install other trials use).
+- Hermes can search its stored past sessions even with `memory_enabled: false` (seen: it found session 1's text in
+  its session DB). Our definition of memory off = nothing carries between sessions, so memory off ⇒ a fresh
+  Hermes home per session; memory on ⇒ one home per trial.
+- Observed cost effect (one task): memory on 50k tokens / score 1.0; memory off 210k tokens / score 0.0.
+- Gemini free TPM (250k) can be hit by a single long Hermes trial ⇒ such trials come back `invalid` (HTTP 429)
+  and must be retried later by the API; never scored 0.

@@ -14,6 +14,7 @@ import time
 
 from .graders import run_graders
 from .harnesses import get_harness
+from .isolation import level, scrub
 from .models import ProviderError
 from .sandbox import trial_dirs
 from .schema import Config, Task, TrialContext
@@ -26,7 +27,8 @@ def run(spec: dict) -> dict:
     started = time.time()
 
     meta = {"task_id": task.id, "task_hash": task.content_hash(), "config_id": config.config_id(),
-            "harness_version": harness.version, "trial_index": spec.get("trial_index", 0)}
+            "harness_version": harness.version, "trial_index": spec.get("trial_index", 0),
+            "isolation": level()}
 
     with trial_dirs(task) as (sandbox, home):
         ctx = TrialContext(task, config, sandbox, home, meta["trial_index"])
@@ -55,7 +57,7 @@ def run(spec: dict) -> dict:
 def main() -> None:
     with open(sys.argv[1]) as f:
         spec = json.load(f)
-    print(json.dumps(run(spec)))
+    print(json.dumps(scrub(run(spec))))  # no API key ever leaves the runner
 
 
 if __name__ == "__main__":

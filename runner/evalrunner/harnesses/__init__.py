@@ -2,11 +2,13 @@
 
 from .base import HarnessAdapter
 from .baseline import BaselineHarness
+from .hermes import HermesHarness
 from .mock import MockHarness
 
 HARNESSES: dict[str, type[HarnessAdapter]] = {
     MockHarness.id: MockHarness,
     BaselineHarness.id: BaselineHarness,
+    HermesHarness.id: HermesHarness,
 }
 
 
