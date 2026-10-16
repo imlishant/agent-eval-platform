@@ -84,7 +84,7 @@ class HarnessAdapter:
 Harnesses:
 - `mock` — scripted trace, no model calls (free pipeline testing, used in CI).
 - `baseline` — plain tool-calling loop using a ModelAdapter. Tools: bash, read_file, write_file. Skills = markdown added to system prompt; a `skill_used` event is logged when the model calls `use_skill(name)`. Memory = `memory.md` in home_dir + `memory_write` tool, loaded at session start (`memory_read` event).
-- `hermes` — `hermes chat --oneshot -q <prompt> --provider custom --base-url <url> --max-turns N`, with HOME pointed at the trial's home_dir so `~/.hermes` is per-trial. Skills copied into its skills folder; memory off via `memory.memory_enabled: false` in the trial's config.yaml (and/or `--ignore-rules`). Memory writes detected by diffing memory files per session. All flags **verified in a spike before the adapter is written** (§13, S2).
+- `hermes` — verified in spike S2 (see DECISIONS D9): `HERMES_HOME=<trial home> hermes chat -q <prompt> --oneshot --format stream-json --in <sandbox> --provider <name> -m <model> --max-turns N --run-budget S --ignore-rules`. Provider defined in the trial's `config.yaml` (`providers:` base_url + key_env). Skills copied into `$HERMES_HOME/skills`; memory via `memory.memory_enabled`. JSONL events → trace. Memory writes detected by diffing `$HERMES_HOME/memories/` per session. No `--yolo`. Needs a model with ≥64k context ⇒ runs on Gemini, not local qwen3:8b or Groq.
 
 ### Trace event (shared schema)
 ```json
@@ -166,8 +166,10 @@ Tasks are custom (not from public benchmarks) to reduce contamination. Difficult
 Compare page shows failure-category counts per config.
 
 ## 11. Experiments
-- **E1 (primary, experiment of record):** same `baseline` harness, same settings, model differs: hosted larger free model vs local `qwen3:8b` — or two local sizes if hosted quota is unavailable (decided at spike S3). 20 tasks × 3 trials × 2 configs = 120 trials. Hypothesis written *before* running.
-- **E2 (memory/skill axis):** same model, `memory: on` vs `off` (and skill on/off), run on the memory/skill task subset. Hermes memory on vs off if the Hermes spike passes.
+- **E1 (primary, experiment of record):** same model (Gemini free tier), **two harnesses**: `baseline` vs `hermes`. This is the PDF's "same model in two harnesses" axis and exercises the required harness. 20 tasks × 3 trials × 2 configs = 120 trials. Hypothesis written *before* running.
+- **E2 (memory axis):** `hermes` memory on vs off on the memory/skill task subset (PDF's own example).
+- **E3 (cheap, if quota allows):** `baseline` model axis on Groq (`gpt-oss-20b` vs `gpt-oss-120b`) or local `qwen3:8b`.
+- Exact Gemini model picked after reading the account's limits (aistudio.google.com/rate-limit) and the pilot's tokens/trial.
 - **Pilot (N=1, few tasks):** measure token use, latency, within-task variance → informs cost formula and N justification.
 - Report: hypothesis, setup, N, CI, per-task deltas, 2–3 inspected trajectories, conclusion.
 - Cost formula: `tasks × trials × configs × (avg_in_tokens × price_in + avg_out_tokens × price_out)`. Free/local → actual spend $0, plus **list-price equivalent** and wall-clock time. Reduce cost by: call caching, early stopping when CI excludes 0 after N=2, screening on a task subset, cheaper judge.
