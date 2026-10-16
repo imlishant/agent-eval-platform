@@ -11,6 +11,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+from ..isolation import confine
+
 MAX_OUTPUT = 4000
 BASH_TIMEOUT_S = 30
 
@@ -30,8 +32,8 @@ def bash(sandbox: Path, home: Path, args: dict) -> tuple[str, bool]:
     path = os.path.dirname(sys.executable) + os.pathsep + os.environ.get("PATH", "/usr/bin:/bin")
     env = {"PATH": path, "HOME": str(home), "LANG": "C.UTF-8"}
     try:
-        r = subprocess.run(cmd, shell=True, cwd=sandbox, env=env, capture_output=True,
-                           text=True, timeout=BASH_TIMEOUT_S)
+        r = subprocess.run(confine(["/bin/sh", "-c", cmd], sandbox.parent), cwd=sandbox, env=env,
+                           capture_output=True, text=True, timeout=BASH_TIMEOUT_S)
     except subprocess.TimeoutExpired:
         return f"command timed out after {BASH_TIMEOUT_S}s", True
     out = (r.stdout + r.stderr)[-MAX_OUTPUT:]

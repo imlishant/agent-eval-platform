@@ -4,7 +4,14 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- Hermes Agent harness adapter (`feat/hermes-adapter`).
+- API (NestJS + SQLite), stats, export.
+
+## [0.5.0] - 2026-10-16 · Hermes harness and OS-level isolation (`feat/hermes-adapter`)
+- `hermes` harness: headless Hermes Agent per session, JSON events mapped to our trace, memory reads/writes from
+  file diffs, skills installed per trial, memory off = fresh Hermes home per session.
+- Found and fixed: an agent escaped folder isolation and copied a reference answer (DECISIONS D14).
+  Agent processes now run under an OS sandbox; secrets scrubbed from results; unit_tests grader hardened;
+  harness crashes are `invalid`, not scored.
 
 ## [0.4.0] - 2026-10-16 · Graders and task set (`feat/graders-tasks`)
 - Graders: `file_check` (contains / regex / JSON fields, partial credit), `unit_tests` (uses the task's own tests),

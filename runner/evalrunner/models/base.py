@@ -7,10 +7,9 @@ from dataclasses import dataclass, field
 
 
 class ProviderError(Exception):
-    """The provider failed (rate limit, 5xx, network) even after retries.
-
-    This is an infra failure, not an agent failure: the trial is marked `invalid`
-    and left out of the comparison instead of being scored 0.
+    """Infrastructure failed, not the agent: the provider (rate limit, 5xx, network) even after
+    retries, or the harness program itself crashed. The trial is marked `invalid` and left out
+    of the comparison instead of being scored 0.
     """
 
 
