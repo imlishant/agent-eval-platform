@@ -1,0 +1,7 @@
+id: count-csv-rows
+category: exact
+sessions:
+  - "How many data rows (not counting the header) are in data.csv? Reply with only the number."
+graders:
+  - type: exact_match
+    expected: "37"
