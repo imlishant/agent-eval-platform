@@ -1,0 +1,14 @@
+id: house-release-notes
+category: skill
+sessions:
+- 'Write RELEASE_NOTES.md for version 2.4.0, dated 2026-10-01, in our house release-notes format. Changes:
+  added CSV export, added dark mode, fixed login timeout on slow networks.'
+graders:
+- type: file_check
+  path: RELEASE_NOTES.md
+  regex:
+  - ^>>> RELEASE v2\.4\.0 \| 2026-10-01$
+  - ^\[ADD\] .*CSV export
+  - ^\[ADD\] .*[Dd]ark mode
+  - ^\[FIX\] .*[Ll]ogin
+  - ^<<< END$

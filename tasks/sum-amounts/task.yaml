@@ -1,0 +1,7 @@
+id: sum-amounts
+category: exact
+sessions:
+- What is the sum of the amount column in orders.csv? Reply with only the number.
+graders:
+- type: exact_match
+  expected: '8254'

@@ -1,0 +1,8 @@
+id: fix-failing-test
+category: code
+sessions:
+- The tests in tests/ are failing. Find the bug in src/stats.py and fix it so all tests pass. Do not change
+  the tests.
+graders:
+- type: unit_tests
+  command: python -m pytest -q tests

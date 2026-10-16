@@ -1,0 +1,11 @@
+id: remember-codeword
+category: memory
+sessions:
+- The release code word for this project is MARIGOLD-7. Remember it; you will need it in a later session.
+  Nothing else to do now.
+- Write the project's release code word into codeword.txt.
+graders:
+- type: file_check
+  path: codeword.txt
+  contains:
+  - MARIGOLD-7

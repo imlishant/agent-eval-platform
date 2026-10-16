@@ -1,0 +1,15 @@
+id: write-readme
+category: judge
+sessions:
+- Write README.md for the tool in wordcount.py so a new teammate can use it.
+graders:
+- type: llm_judge
+  target_file: README.md
+  context_files:
+  - wordcount.py
+  rubric:
+  - Explains what the tool does (counts lines, words and characters of a file).
+  - Shows at least one concrete example command.
+  - Documents the -l, -w and -c flags correctly.
+  - States what is printed when no flag is given.
+  - Does not describe features or flags that wordcount.py does not have.

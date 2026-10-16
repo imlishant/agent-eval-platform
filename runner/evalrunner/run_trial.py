@@ -32,12 +32,12 @@ def run(spec: dict) -> dict:
         ctx = TrialContext(task, config, sandbox, home, meta["trial_index"])
         try:
             trace = harness.run_trial(ctx)
+            grades = run_graders(task.graders, trace, sandbox, task)  # judge can hit the provider too
         except ProviderError as e:
             # infra failure: not the agent's fault, so no score; left out of comparisons
             return {**meta, "status": "invalid", "error": str(e), "score": None, "passed": None,
                     "grades": [], "usage": {}, "latency_ms": int((time.time() - started) * 1000),
                     "trace": []}
-        grades = run_graders(task.graders, trace, sandbox)
 
     score = sum(g.score for g in grades) / len(grades) if grades else 0.0
     return {

@@ -1,0 +1,12 @@
+id: remember-staging-host
+category: memory
+sessions:
+- 'For later tasks: our staging server is stg-eu-04.internal and it listens on port 7443. Remember this.
+  Nothing else to do now.'
+- 'Create deploy.env with two lines: HOST=<the staging server host> and PORT=<the staging server port>.'
+graders:
+- type: file_check
+  path: deploy.env
+  regex:
+  - ^HOST=stg-eu-04\.internal\s*$
+  - ^PORT=7443\s*$

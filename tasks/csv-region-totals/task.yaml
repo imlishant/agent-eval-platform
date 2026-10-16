@@ -1,0 +1,8 @@
+id: csv-region-totals
+category: code
+sessions:
+- 'Read sales.csv and write totals.csv with the header `region,total`: one row per region with the sum
+  of its amounts as a whole number, rows sorted by region name A to Z.'
+graders:
+- type: unit_tests
+  command: python -m pytest -q tests

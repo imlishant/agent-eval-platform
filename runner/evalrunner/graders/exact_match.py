@@ -11,10 +11,10 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from ..schema import Grade, Trace
+from ..schema import Grade, Task, Trace
 
 
-def exact_match(spec: dict, trace: Trace, sandbox: Path) -> Grade:
+def exact_match(spec: dict, trace: Trace, sandbox: Path, task: Task) -> Grade:
     expected = str(spec["expected"]).strip()
     got = trace.final_answer(spec.get("session")).strip()
     if not spec.get("case_sensitive", False):

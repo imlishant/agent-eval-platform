@@ -1,0 +1,17 @@
+id: refund-reply
+category: judge
+sessions:
+- 'Read email.txt and policy.md, then write reply.md: our reply to the customer.'
+graders:
+- type: llm_judge
+  target_file: reply.md
+  context_files:
+  - policy.md
+  - email.txt
+  rubric:
+  - Is polite and addresses the customer.
+  - Correctly explains that the 30-day no-questions refund period has passed.
+  - Does not promise or grant a refund.
+  - Explains that a refund after 30 days is only possible for a defective product, and how to request
+    it (photo to support).
+  - Contains no claims that contradict policy.md.

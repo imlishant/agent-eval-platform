@@ -1,0 +1,29 @@
+#!/usr/bin/env python3
+"""Internal service registry CLI (fake, for the eval)."""
+import json, sys
+from pathlib import Path
+
+REG = Path(__file__).resolve().parent / "registry.json"
+args = sys.argv[1:]
+if not args or args[0] in ("-h", "--help", "help"):
+    print("usage: deployctl <register|list> [options]. See the internal docs for details.")
+    sys.exit(0)
+reg = json.loads(REG.read_text()) if REG.exists() else {"services": []}
+if args[0] == "list":
+    for s in reg["services"]:
+        print(f"{s['name']}\t{s['port']}\t{s['tier']}")
+    sys.exit(0)
+if args[0] == "register":
+    opts = dict(zip(args[1::2], args[2::2]))
+    if "--svc" not in opts or "--port" not in opts:
+        sys.exit("error: register needs --svc and --port")
+    if "--tier" not in opts:
+        sys.exit("error: --tier is required")
+    if opts["--tier"] not in ("gold", "silver", "bronze"):
+        sys.exit("error: invalid tier")
+    reg["services"] = [s for s in reg["services"] if s["name"] != opts["--svc"]]
+    reg["services"].append({"name": opts["--svc"], "port": int(opts["--port"]), "tier": opts["--tier"]})
+    REG.write_text(json.dumps(reg, indent=2) + "\n")
+    print(f"registered {opts['--svc']}")
+    sys.exit(0)
+sys.exit(f"error: unknown command {args[0]}")

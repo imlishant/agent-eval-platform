@@ -1,0 +1,11 @@
+id: register-service
+category: skill
+sessions:
+- Register our new `billing` service, which listens on port 9090, using the deployctl tool in this folder.
+graders:
+- type: file_check
+  path: registry.json
+  contains:
+  - '"name": "billing"'
+  - '"port": 9090'
+  - '"tier": "gold"'

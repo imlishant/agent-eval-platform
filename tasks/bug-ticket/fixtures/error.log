@@ -1,0 +1,5 @@
+2026-10-01T08:59:58 INFO  upload-svc started version=3.2.0
+2026-10-01T09:02:11 ERROR UploadError: avatar upload failed user=7731 reason="S3 bucket avatars-prod: AccessDenied"
+2026-10-01T09:02:40 ERROR UploadError: avatar upload failed user=1204 reason="S3 bucket avatars-prod: AccessDenied"
+2026-10-01T09:03:05 INFO  GET /profile/1204 200
+2026-10-01T09:05:17 ERROR UploadError: avatar upload failed user=5520 reason="S3 bucket avatars-prod: AccessDenied"

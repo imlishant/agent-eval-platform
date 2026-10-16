@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "task_id": "incident-summary",
+    "label": "pass",
+    "why": "complete and accurate",
+    "output": "- 14 Sep: checkout failed for ~60% of requests for 47 minutes; about 3,100 checkouts failed.\n- Root cause: TLS certificate for payments-gw expired; it was issued manually and never added to auto-renewal.\n- Fixed by deploying a new certificate at 13:31 UTC.\n- Follow-ups: auto-renewal for the cert (Priya, 30 Sep); expiry alert 14 days ahead (Tom, 7 Oct).",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 2,
+    "task_id": "incident-summary",
+    "label": "fail",
+    "why": "wrong root cause",
+    "output": "- Checkout was down for 47 minutes on 14 Sep.\n- Root cause: the payments database ran out of connections.\n- About 3,100 checkouts failed.\n- Follow-up: Priya will add more database capacity.",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 3,
+    "task_id": "incident-summary",
+    "label": "pass",
+    "why": "short but has root cause, impact, owner",
+    "output": "- Expired, manually issued TLS cert on payments-gw broke checkout for 47 min (~3,100 failed attempts).\n- Priya moves the cert to auto-renewal by 30 Sep.",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 4,
+    "task_id": "incident-summary",
+    "label": "fail",
+    "why": "too many bullets (8)",
+    "output": "- Alerts fired at 13:02 UTC.\n- Checkout API returned 502s.\n- About 60% of requests failed.\n- At 13:10 the expired TLS cert was found.\n- It had been issued manually and was not auto-renewed.\n- New cert deployed at 13:31.\n- Normal by 13:49 (47 minutes).\n- Follow-ups: auto-renewal (Priya), expiry alert (Tom).",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 5,
+    "task_id": "incident-summary",
+    "label": "fail",
+    "why": "invents facts (refunds, engineer leaving)",
+    "output": "- An expired TLS certificate that was not auto-renewed broke checkout for 47 minutes.\n- 3,100 checkouts failed; all affected customers were refunded automatically.\n- The engineer who issued the certificate has left the company.\n- Tom will add an expiry alert by 7 Oct.",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 6,
+    "task_id": "write-readme",
+    "label": "pass",
+    "why": "complete",
+    "output": "# wordcount\nCounts lines, words and characters in a text file.\n\nUsage: `python wordcount.py [-l] [-w] [-c] FILE`\n- `-l` line count only\n- `-w` word count only\n- `-c` character count only\n\nWith no flag it prints all three (lines words chars).\n\nExample: `python wordcount.py -l notes.txt`",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 7,
+    "task_id": "write-readme",
+    "label": "fail",
+    "why": "invents a --json flag",
+    "output": "# wordcount\nCounts lines, words and characters.\n\n`python wordcount.py -l FILE` lines, `-w` words, `-c` characters, `--json` prints the counts as JSON.\nNo flag prints all three counts.\nExample: `python wordcount.py --json notes.txt`",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 8,
+    "task_id": "write-readme",
+    "label": "fail",
+    "why": "missing flags and default behaviour",
+    "output": "# wordcount\nA small script that counts words in a file.\n\nRun it with `python wordcount.py myfile.txt`.",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 9,
+    "task_id": "write-readme",
+    "label": "pass",
+    "why": "different wording, still correct",
+    "output": "## What it is\n`wordcount.py` tells you how many lines, words and characters a text file has.\n\n## How to use\n```\npython wordcount.py report.txt      # prints: lines words chars\npython wordcount.py -w report.txt   # prints only the word count\n```\nFlags: `-l` = lines only, `-w` = words only, `-c` = characters only. You can combine them.",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 10,
+    "task_id": "write-readme",
+    "label": "fail",
+    "why": "wrong meaning of -c",
+    "output": "# wordcount\nCounts lines, words and characters in a file.\n\n- `-l` prints the line count\n- `-w` prints the word count\n- `-c` prints the number of commas\n\nWithout flags all three counts are printed.\nExample: `python wordcount.py -c data.txt`",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 11,
+    "task_id": "refund-reply",
+    "label": "pass",
+    "why": "correct and polite",
+    "output": "Hi Dana,\n\nThanks for reaching out. Our no-questions refunds are available for 30 days after delivery, and it has been 45 days, so I can't refund a change of mind. After 30 days we can only refund defective products: if the lamp has a defect, email a photo to support@example.com and the team will decide within 5 business days.\n\nKind regards,\nSupport",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 12,
+    "task_id": "refund-reply",
+    "label": "fail",
+    "why": "grants a refund against policy",
+    "output": "Hi Dana,\n\nSorry the colour isn't right! Although it's been 45 days, we'll make an exception this time and refund you in full. Just send the lamp back.\n\nBest,\nSupport",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 13,
+    "task_id": "refund-reply",
+    "label": "fail",
+    "why": "rude and missing the defect route",
+    "output": "No. Refunds are only within 30 days.",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 14,
+    "task_id": "refund-reply",
+    "label": "pass",
+    "why": "correct, slightly different structure",
+    "output": "Dear Dana,\n\nThank you for your message, and I'm sorry you're not happy with the colour.\n\nOur policy allows a full refund within 30 days of delivery. As your lamp was delivered 45 days ago, a refund for a change of mind isn't possible.\n\nIf you find the lamp is defective, please send a photo of the defect to support@example.com; the team reviews these within 5 business days.\n\nBest regards,\nCustomer Support",
+    "reviewed_by_human": false
+  },
+  {
+    "id": 15,
+    "task_id": "refund-reply",
+    "label": "fail",
+    "why": "promises a refund conditional on a photo (policy says support decides)",
+    "output": "Hi Dana,\n\nThanks for writing. The 30-day refund window has passed, but don't worry: just send a photo of the lamp to support@example.com and we will refund you within 5 business days.\n\nBest,\nSupport",
+    "reviewed_by_human": false
+  }
+]
