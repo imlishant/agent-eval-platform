@@ -6,5 +6,10 @@
 - After the experiment: add 5–10 real agent outputs (labelled by the author), re-run validate_judge.py.
 - Check: results.json provisional == false, kappa reported in DESIGN.md.
 
-## FEAT-6 · Hermes adapter                                              [feature · ready]  parent: main
-- Check: one task end to end with harness=hermes on Gemini; trace has tool_call/tool_result; memory on/off works across 2 sessions.
+## FEAT-7 · API: NestJS + SQLite, experiments, worker pool, retries of invalid trials, stats, export   [feature · ready]  parent: main
+- Check: create experiment via API → trials run (pool per provider) → paired bootstrap CI + per-task deltas → JSON/CSV export; stats unit tests (hand example, no-difference simulation).
+- Branch: feat/api-stats
+
+## CHORE-8 · Linux/Docker isolation                                     [chore · ready]  parent: main
+- In Docker, run agent processes as a separate unprivileged user that cannot read tasks/*/reference or tests.
+- Check: isolation attack tests pass inside the container.
