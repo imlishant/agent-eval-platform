@@ -39,5 +39,14 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - Actual spend is $0 (free/local). The cost report also prices the measured tokens at Claude list rates, as the real-world paid equivalent.
   Source: Anthropic pricing table cached 2026-10-06 — Opus 5.5 $4 / $20, Sonnet 5.5 $2 / $10, Haiku 5.5 $0.10 / $0.50 per 1M input / output tokens. Re-check before final report.
 
-## D9 · 2026-10-16 · Spike S2 (Hermes) pending
-- Official installer reviewed (installs to ~/.hermes, pinned uv with checksum, adds ~/.local/bin to PATH). Must be run by the user.
+## D9 · 2026-10-16 · Spike S2 (Hermes v0.22.2) passed on Gemini; not runnable on local or Groq
+- Headless works: `hermes chat -q <prompt> --oneshot --format stream-json --in <sandbox> --provider <name> -m <model> --max-turns N --run-budget S --ignore-rules`.
+- Isolation works: `HERMES_HOME=<trial home>` puts config, memories/, skills/, sessions and state.db per trial. Custom providers via `providers:` in that config.yaml (base_url + key_env).
+- `stream-json` gives JSONL events: tool_use, tool_result, text, result (with tokens + duration + exit_code) → maps onto our trace schema.
+- Memory switch: `memory.memory_enabled` / `user_profile_enabled` in config.yaml; memory files in `$HERMES_HOME/memories/`.
+- Safety: in `-q` mode Hermes blocks `execute_code`; we do **not** pass `--yolo` (keeps its dangerous-command approvals on). Agent still has read/write/search/terminal.
+- Gemini `gemini-3.1-flash-lite`: solved the probe task, exit 0, 4 tool calls, ~12.7 s.
+- **Cost driver:** Hermes's own system prompt ⇒ ~29k input tokens even for a trivial task (baseline harness: ~150). Cross-harness token/cost comparisons include this.
+- Local `qwen3:8b`: refused — Hermes requires ≥ 64k context; qwen3:8b has 40k, and a 64k KV cache does not fit in 16 GB alongside the model.
+- Groq: 400 on `reasoning_effort`; also its 8k tokens/min limit is below one Hermes request (~29k). Not usable for Hermes.
+- Consequence: Hermes experiments run on Gemini free tier. Baseline can run on any provider.
