@@ -6,8 +6,5 @@
 - Check: pytest — mock "solve" scores 1, mock "fail" scores 0, sandbox is fresh per trial.
 - Branch: feat/runner-core
 
-## FEAT-2 · Baseline harness + OpenAI-compatible model adapter               [feature · ready]  parent: main
+## FEAT-2 · Baseline harness + OpenAI-compatible model adapter               [feature · in-progress]  parent: main
 - Check: real model (Groq/local) solves the sample task; trace has model_call/tool_call/tool_result; 429 retried.
-
-## FEAT-3 · Model provider for Hermes experiments                              [chore · needs-info]  parent: main
-- Gemini 2.5 Flash/Flash-Lite free = 20 requests/day: too low for 120 trials. Candidates: Mistral free tier; other Gemini rows (3.x, Gemma).

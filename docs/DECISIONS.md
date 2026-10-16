@@ -50,3 +50,11 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - Local `qwen3:8b`: refused — Hermes requires ≥ 64k context; qwen3:8b has 40k, and a 64k KV cache does not fit in 16 GB alongside the model.
 - Groq: 400 on `reasoning_effort`; also its 8k tokens/min limit is below one Hermes request (~29k). Not usable for Hermes.
 - Consequence: Hermes experiments run on Gemini free tier. Baseline can run on any provider.
+
+## D10 · 2026-10-16 · Provider for Hermes experiments: Gemini Flash Lite free tier
+- Account limits (AI Studio, free tier): `gemini-3.1-flash-lite` and `gemini-3.5-flash-lite` each 15 RPM / 250k TPM / **500 RPD**, separate quotas per model.
+  Gemini 2.5/3.x Flash (non-lite): 5 RPM / 20 RPD — unusable. Gemma 4 26B/31B: 30 RPM / 16k TPM / 14.4k RPD.
+- Mistral free plan: API keys inactive without upgrade (checked in console) — rejected. Cerebras: now needs a card — rejected.
+- Budget: Hermes ≈ 5 calls × ~30k tokens per trial ⇒ TPM-bound at ~1.5 trials/min. E1 (baseline vs Hermes, 120 trials) ≈ 500–600 requests on one model ⇒ may cross the 500 RPD cap ⇒ runs are resumable and may span two quota days.
+- Split: E1 on `gemini-3.1-flash-lite`; E2 (Hermes memory on/off) on `gemini-3.5-flash-lite`; judge on `gemma-4-31b-it` (different family from models under test).
+- Dev and debugging never spend Gemini quota: use local `qwen3:8b` or Groq.
