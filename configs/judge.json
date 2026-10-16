@@ -1,0 +1,3 @@
+{"model": {"provider": "openai_compat", "id": "gemma-4-26b-a4b-it",
+           "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "api_key_env": "GEMINI_API_KEY"},
+ "max_tokens": 1500}

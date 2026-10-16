@@ -1,0 +1,15 @@
+id: log-error-counts
+category: code
+sessions:
+- 'Count the ERROR lines in app.log by error code (like E101). Write error_counts.txt with one line per
+  code in the form `E101: 4`, sorted by code. Only count ERROR lines, not warnings.'
+graders:
+- type: file_check
+  path: error_counts.txt
+  contains:
+  - 'E101: 9'
+  - 'E202: 7'
+  - 'E303: 7'
+  - 'E404: 8'
+  not_contains:
+  - E999

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 from pathlib import Path
 
 MAX_OUTPUT = 4000
@@ -25,7 +26,9 @@ def bash(sandbox: Path, home: Path, args: dict) -> tuple[str, bool]:
     cmd = args.get("cmd") or args.get("command")
     if not isinstance(cmd, str):
         return "missing required argument 'cmd'", True
-    env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(home), "LANG": "C.UTF-8"}
+    # runner's Python first on PATH, so `python -m pytest` works the same for agent and grader
+    path = os.path.dirname(sys.executable) + os.pathsep + os.environ.get("PATH", "/usr/bin:/bin")
+    env = {"PATH": path, "HOME": str(home), "LANG": "C.UTF-8"}
     try:
         r = subprocess.run(cmd, shell=True, cwd=sandbox, env=env, capture_output=True,
                            text=True, timeout=BASH_TIMEOUT_S)

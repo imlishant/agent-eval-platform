@@ -1,0 +1,5 @@
+- On 14 Sep, checkout failed for ~60% of requests for 47 minutes (13:02-13:49 UTC); ~3,100 checkouts failed.
+- Root cause: the TLS certificate for payments-gw expired; it was issued manually and not auto-renewed.
+- Fixed by issuing and deploying a new certificate at 13:31.
+- No customer was double-charged.
+- Follow-ups: move the cert to auto-renewal (Priya, 30 Sep); alert 14 days before any cert expiry (Tom, 7 Oct).

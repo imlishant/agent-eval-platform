@@ -1,0 +1,16 @@
+id: bug-ticket
+category: skill
+sessions:
+- Since this morning users cannot upload new profile pictures; everything else works. The service log
+  is error.log. Write a bug ticket in ticket.md using our bug ticket template.
+graders:
+- type: file_check
+  path: ticket.md
+  regex:
+  - '^Title: .+'
+  - '^Severity: S[1-4]\s*$'
+  - ^### Impact
+  - ^### Repro
+  - ^### Evidence
+  contains:
+  - AccessDenied

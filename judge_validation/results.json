@@ -1,0 +1,144 @@
+{
+  "accuracy": 1.0,
+  "kappa": 1.0,
+  "verdict": "TRUSTED",
+  "n": 15,
+  "provisional": true,
+  "items": [
+    {
+      "id": 1,
+      "task_id": "incident-summary",
+      "human": true,
+      "judge": true,
+      "judge_score": 1.0,
+      "agree": true,
+      "judge_reasoning": "MET - States that the root cause was an expired TLS certificate that was not auto-renewed. (The agent explicitly states the root cause was an expired certificate not in auto-renewal.)\nMET - States the customer impact duration (about 47 minutes) or the ~3,100 failed checkouts. (The agent includes both the 47-minute duration and the 3,100 failed checkouts.)\nMET - Mentions at least one follow-up action with its owner. (The agent lists two follow-up actions along with their respective owners.)\nMET - Contains no facts that contradict or are absent from incident.md. (All information provided is consistent with the source document.)\nMET - Has at most 6 bullet points. (The summary contains 4 bullet points, which is under the limit of 6.)"
+    },
+    {
+      "id": 2,
+      "task_id": "incident-summary",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.0,
+      "agree": true,
+      "judge_reasoning": "judge reply was not valid JSON: '<thought>*   Task: Summarize `incident.md` for leadership (max 6 bullet points).\\n    *   Source (`incident.md`):\\n        *   Incident: Checkout errors (502s).\\n        *   Cause: TLS certificate for `payments-gw.internal` expired at 13:00.\\n        *   Duration: 47 minutes.\\n        *   Impact: ~3,100 '"
+    },
+    {
+      "id": 3,
+      "task_id": "incident-summary",
+      "human": true,
+      "judge": true,
+      "judge_score": 1.0,
+      "agree": true,
+      "judge_reasoning": "MET - States that the root cause was an expired TLS certificate that was not auto-renewed. (The agent correctly identifies the expired, manually issued certificate as the cause.)\nMET - States the customer impact duration (about 47 minutes) or the ~3,100 failed checkouts. (The agent includes both the duration and the number of failed attempts.)\nMET - Mentions at least one follow-up action with its owner. (The agent mentions Priya's follow-up action regarding auto-renewal.)\nMET - Contains no facts that contradict or are absent from incident.md. (All information provided is consistent with the source file.)\nMET - Has at most 6 bullet points. (The summary contains only 2 bullet points.)"
+    },
+    {
+      "id": 4,
+      "task_id": "incident-summary",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.8,
+      "agree": true,
+      "judge_reasoning": "MET - States that the root cause was an expired TLS certificate that was not auto-renewed. (The agent correctly identifies the root cause as an expired, non-auto-renewed TLS certificate.)\nMET - States the customer impact duration (about 47 minutes) or the ~3,100 failed checkouts. (The agent includes the 47-minute impact duration.)\nMET - Mentions at least one follow-up action with its owner. (The agent mentions both follow-up actions and their respective owners.)\nMET - Contains no facts that contradict or are absent from incident.md. (All information provided is consistent with the source file.)\nNOT MET - Has at most 6 bullet points. (The agent provided 8 bullet points, which exceeds the maximum limit of 6.)"
+    },
+    {
+      "id": 5,
+      "task_id": "incident-summary",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.8,
+      "agree": true,
+      "judge_reasoning": "MET - States that the root cause was an expired TLS certificate that was not auto-renewed. (The agent correctly identifies the expired certificate and lack of auto-renewal as the cause.)\nMET - States the customer impact duration (about 47 minutes) or the ~3,100 failed checkouts. (The agent includes both the 47-minute duration and the 3,100 failed checkouts.)\nMET - Mentions at least one follow-up action with its owner. (The agent mentions Tom's follow-up action regarding the expiry alert.)\nNOT MET - Contains no facts that contradict or are absent from incident.md. (The agent includes information not present in the source, specifically regarding automatic refunds and an engineer leaving the company.)\nMET - Has at most 6 bullet points. (The output contains 4 bullet points, which is under the limit of 6.)"
+    },
+    {
+      "id": 6,
+      "task_id": "write-readme",
+      "human": true,
+      "judge": true,
+      "judge_score": 1.0,
+      "agree": true,
+      "judge_reasoning": "MET - Explains what the tool does (counts lines, words and characters of a file). (The README clearly states that the tool counts lines, words, and characters.)\nMET - Shows at least one concrete example command. (It provides a concrete example command using the -l flag.)\nMET - Documents the -l, -w and -c flags correctly. (The -l, -w, and -c flags are documented accurately according to the source code.)\nMET - States what is printed when no flag is given. (It explicitly mentions that no flag results in printing all three counts.)\nMET - Does not describe features or flags that wordcount.py does not have. (No extra or non-existent flags or features are described.)"
+    },
+    {
+      "id": 7,
+      "task_id": "write-readme",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.8,
+      "agree": true,
+      "judge_reasoning": "MET - Explains what the tool does (counts lines, words and characters of a file). (The README clearly states that the tool counts lines, words, and characters.)\nMET - Shows at least one concrete example command. (It provides example commands for usage.)\nMET - Documents the -l, -w and -c flags correctly. (The -l, -w, and -c flags are documented correctly according to the source code.)\nMET - States what is printed when no flag is given. (It explicitly states that no flag prints all three counts.)\nNOT MET - Does not describe features or flags that wordcount.py does not have. (It describes a non-existent --json flag and provides an example using it.)"
+    },
+    {
+      "id": 8,
+      "task_id": "write-readme",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.4,
+      "agree": true,
+      "judge_reasoning": "NOT MET - Explains what the tool does (counts lines, words and characters of a file). (The description only mentions counting words, omitting lines and characters.)\nMET - Shows at least one concrete example command. (It provides a valid example command.)\nNOT MET - Documents the -l, -w and -c flags correctly. (The flags are not documented at all.)\nNOT MET - States what is printed when no flag is given. (It does not state what happens when no flags are provided.)\nMET - Does not describe features or flags that wordcount.py does not have. (It does not describe any non-existent features.)"
+    },
+    {
+      "id": 9,
+      "task_id": "write-readme",
+      "human": true,
+      "judge": true,
+      "judge_score": 1.0,
+      "agree": true,
+      "judge_reasoning": "MET - Explains what the tool does (counts lines, words and characters of a file). (The README clearly states that the tool counts lines, words, and characters.)\nMET - Shows at least one concrete example command. (It provides two concrete command examples.)\nMET - Documents the -l, -w and -c flags correctly. (All three flags are correctly defined.)\nMET - States what is printed when no flag is given. (The example command without flags explicitly shows what is printed.)\nMET - Does not describe features or flags that wordcount.py does not have. (The agent correctly identifies that flags can be combined based on the code implementation.)"
+    },
+    {
+      "id": 10,
+      "task_id": "write-readme",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.6,
+      "agree": true,
+      "judge_reasoning": "MET - Explains what the tool does (counts lines, words and characters of a file). (The description accurately states the tool's purpose.)\nMET - Shows at least one concrete example command. (A concrete example command is provided.)\nNOT MET - Documents the -l, -w and -c flags correctly. (The -c flag is incorrectly documented as counting commas instead of characters.)\nMET - States what is printed when no flag is given. (It correctly explains the behavior when no flags are provided.)\nNOT MET - Does not describe features or flags that wordcount.py does not have. (It describes a feature (counting commas) that does not exist in the code.)"
+    },
+    {
+      "id": 11,
+      "task_id": "refund-reply",
+      "human": true,
+      "judge": true,
+      "judge_score": 1.0,
+      "agree": true,
+      "judge_reasoning": "MET - Is polite and addresses the customer. (The reply is polite and addresses the customer by name.)\nMET - Correctly explains that the 30-day no-questions refund period has passed. (It correctly identifies that the 45-day period exceeds the 30-day window.)\nMET - Does not promise or grant a refund. (It denies the request for a change of mind and does not promise a refund for defects.)\nMET - Explains that a refund after 30 days is only possible for a defective product, and how to request it (photo to support). (It explains the defect requirement and the specific process of emailing a photo to support.)\nMET - Contains no claims that contradict policy.md. (All statements made in the reply are consistent with the provided policy.)"
+    },
+    {
+      "id": 12,
+      "task_id": "refund-reply",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.4,
+      "agree": true,
+      "judge_reasoning": "MET - Is polite and addresses the customer. (The reply is polite and addresses the customer by name.)\nMET - Correctly explains that the 30-day no-questions refund period has passed. (It acknowledges that 45 days have passed.)\nNOT MET - Does not promise or grant a refund. (The agent explicitly promises a full refund as an exception.)\nNOT MET - Explains that a refund after 30 days is only possible for a defective product, and how to request it (photo to support). (It fails to mention the defect requirement or the photo submission process.)\nNOT MET - Contains no claims that contradict policy.md. (The agent violates the policy by promising a refund for a non-defective reason after 30 days.)"
+    },
+    {
+      "id": 13,
+      "task_id": "refund-reply",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.0,
+      "agree": true,
+      "judge_reasoning": "judge reply was not valid JSON: '<thought>*   Task: Read `email.txt` and `policy.md`, write `reply.md`.\\n    *   `policy.md`:\\n        *   Full refund within 30 days (no questions asked).\\n        *   After 30 days: Only if defective. Must send photo to support@example.com. Support decides within 5 business days.\\n        *   Staff mus'"
+    },
+    {
+      "id": 14,
+      "task_id": "refund-reply",
+      "human": true,
+      "judge": true,
+      "judge_score": 1.0,
+      "agree": true,
+      "judge_reasoning": "MET - Is polite and addresses the customer. (The reply is polite and addresses the customer by name.)\nMET - Correctly explains that the 30-day no-questions refund period has passed. (It correctly identifies that the 45-day period exceeds the 30-day window.)\nMET - Does not promise or grant a refund. (It denies the refund request for a change of mind as per the policy.)\nMET - Explains that a refund after 30 days is only possible for a defective product, and how to request it (photo to support). (It explains the defect exception and the process of sending a photo to support.)\nMET - Contains no claims that contradict policy.md. (The response adheres strictly to all rules outlined in the policy.)"
+    },
+    {
+      "id": 15,
+      "task_id": "refund-reply",
+      "human": false,
+      "judge": false,
+      "judge_score": 0.4,
+      "agree": true,
+      "judge_reasoning": "MET - Is polite and addresses the customer. (The reply is polite and addresses the customer by name.)\nMET - Correctly explains that the 30-day no-questions refund period has passed. (It correctly states that the 30-day window has passed.)\nNOT MET - Does not promise or grant a refund. (The agent explicitly promises a refund by saying 'we will refund you'.)\nNOT MET - Explains that a refund after 30 days is only possible for a defective product, and how to request it (photo to support). (It fails to mention that a refund after 30 days is only possible if the product is defective.)\nNOT MET - Contains no claims that contradict policy.md. (The promise of a refund contradicts the policy that refunds after 30 days are only for defective items and subject to support's decision.)"
+    }
+  ]
+}

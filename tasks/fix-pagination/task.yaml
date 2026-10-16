@@ -1,0 +1,7 @@
+id: fix-pagination
+category: code
+sessions:
+- Users report that page 1 of the results never shows the first items. Fix src/pages.py.
+graders:
+- type: unit_tests
+  command: python -m pytest -q tests

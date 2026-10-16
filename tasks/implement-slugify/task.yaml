@@ -1,0 +1,7 @@
+id: implement-slugify
+category: code
+sessions:
+- Implement the slugify function in src/text.py according to its docstring.
+graders:
+- type: unit_tests
+  command: python -m pytest -q tests

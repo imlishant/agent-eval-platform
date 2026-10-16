@@ -1,0 +1,8 @@
+id: top-city
+category: exact
+sessions:
+- In trips.csv, which city has the highest total cost (sum of the cost column)? Reply with only the city
+  name.
+graders:
+- type: exact_match
+  expected: Bergen

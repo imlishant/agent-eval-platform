@@ -1,0 +1,6 @@
+{
+  "name": "orders",
+  "port": 8443,
+  "debug": false,
+  "replicas": 3
+}

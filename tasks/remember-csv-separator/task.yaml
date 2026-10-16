@@ -1,0 +1,15 @@
+id: remember-csv-separator
+category: memory
+sessions:
+- 'A project convention for all future tasks: CSV files we produce must use a semicolon (;) as the separator,
+  never a comma. Please remember this for later sessions. Nothing else to do now.'
+- 'Create people.csv with the columns name and age, and two people: Ana, 31 and Bo, 45.'
+graders:
+- type: file_check
+  path: people.csv
+  contains:
+  - name;age
+  - Ana;31
+  - Bo;45
+  not_contains:
+  - Ana,31

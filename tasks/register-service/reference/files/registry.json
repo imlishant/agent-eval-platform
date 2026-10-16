@@ -1,0 +1,9 @@
+{
+  "services": [
+    {
+      "name": "billing",
+      "port": 9090,
+      "tier": "gold"
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+id: rename-function
+category: code
+sessions:
+- Rename the function get_usr to get_user everywhere in src/ (definition and all uses). Keep behaviour
+  the same.
+graders:
+- type: unit_tests
+  command: python -m pytest -q tests
+- type: file_check
+  path: src/users.py
+  contains:
+  - def get_user(
+  not_contains:
+  - get_usr
+- type: file_check
+  path: src/report.py
+  not_contains:
+  - get_usr

@@ -1,0 +1,15 @@
+id: incident-summary
+category: judge
+sessions:
+- 'Read incident.md and write summary.md: a short summary for company leadership, at most 6 bullet points.'
+graders:
+- type: llm_judge
+  target_file: summary.md
+  context_files:
+  - incident.md
+  rubric:
+  - States that the root cause was an expired TLS certificate that was not auto-renewed.
+  - States the customer impact duration (about 47 minutes) or the ~3,100 failed checkouts.
+  - Mentions at least one follow-up action with its owner.
+  - Contains no facts that contradict or are absent from incident.md.
+  - Has at most 6 bullet points.

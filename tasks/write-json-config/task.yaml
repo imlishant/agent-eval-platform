@@ -1,0 +1,13 @@
+id: write-json-config
+category: code
+sessions:
+- 'Create config/service.json describing our service: name "orders", port 8443, debug turned off, and
+  3 replicas. Use the keys name, port, debug, replicas, with numbers and booleans as JSON types, not strings.'
+graders:
+- type: file_check
+  path: config/service.json
+  json_fields:
+    name: orders
+    port: 8443
+    debug: false
+    replicas: 3

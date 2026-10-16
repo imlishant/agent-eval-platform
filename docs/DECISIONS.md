@@ -58,3 +58,18 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - Budget: Hermes ≈ 5 calls × ~30k tokens per trial ⇒ TPM-bound at ~1.5 trials/min. E1 (baseline vs Hermes, 120 trials) ≈ 500–600 requests on one model ⇒ may cross the 500 RPD cap ⇒ runs are resumable and may span two quota days.
 - Split: E1 on `gemini-3.1-flash-lite`; E2 (Hermes memory on/off) on `gemini-3.5-flash-lite`; judge on `gemma-4-31b-it` (different family from models under test).
 - Dev and debugging never spend Gemini quota: use local `qwen3:8b` or Groq.
+
+## D11 · 2026-10-16 · Judge model: gemma-4-26b-a4b-it (not 31b)
+- `gemma-4-31b-it` hung (no response in 45–120 s, repeated); `gemma-4-26b-a4b-it` answers in ~2 s with the same free limits (30 RPM / 16k TPM / 14.4k RPD).
+- Different model family from every model under test (gpt-oss, qwen, Gemini Flash Lite).
+- Judge pass = every rubric criterion met; score = share met. Temperature 0.
+
+## D12 · 2026-10-16 · Judge validation, first pass
+- 15 hand-written outputs (5 per judge task: good, wrong fact, missing part, invented feature, borderline), labelled pass/fail.
+- Result: accuracy 1.00, Cohen's kappa 1.00 (threshold 0.6). **Provisional**: labels drafted by the agent, awaiting the author's review (`reviewed_by_human`), and the examples are cleaner than real agent output.
+- Plan: after the experiment, add 5–10 real agent outputs labelled by the author and re-run. Listed in LIMITS as "judge validated on a small, partly synthetic set".
+
+## D13 · 2026-10-16 · Task set design (20)
+- code 8 (unit_tests/file_check), exact 3, skill 3 (made-up house formats + fake internal CLI, so the model cannot know them without the skill), memory 3 (fact in session 1, needed in session 2), judge 3.
+- Grader trust: every deterministic task scores 1.0 on its reference solution and 0.0 on an empty run (pytest, 34 cases). unit_tests graders use the task's own copy of the tests, so an agent editing tests cannot fake a pass.
+- top-city: data generated so the highest-cost city is not the most frequent one (no shortcut answer).
