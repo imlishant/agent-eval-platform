@@ -47,6 +47,10 @@ def hermes_bin() -> str:
 
 class HermesHarness(HarnessAdapter):
     id = "hermes"
+    version = "1"
+    description = "Hermes Agent (Nous Research), run headless: its own tools, skills, memory and large system prompt."
+    settings = ("skills", "memory", "max_steps", "timeout_s")  # no temperature; tools are Hermes's own
+    requirements = "Needs a model with at least 64k context and a high token-per-minute limit (~30k tokens per call)."
 
     def __init__(self) -> None:
         self.bin = hermes_bin()

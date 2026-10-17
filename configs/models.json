@@ -1,0 +1,19 @@
+[
+  {"name": "gemini-3.1-flash-lite", "label": "Gemini 3.1 Flash Lite", "provider": "openai_compat", "id": "gemini-3.1-flash-lite",
+   "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "api_key_env": "GEMINI_API_KEY",
+   "notes": "free tier: 15 req/min, 250k tokens/min, 500 req/day. Works with Hermes."},
+  {"name": "gemini-3.5-flash-lite", "label": "Gemini 3.5 Flash Lite", "provider": "openai_compat", "id": "gemini-3.5-flash-lite",
+   "base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "api_key_env": "GEMINI_API_KEY",
+   "notes": "free tier: 15 req/min, 250k tokens/min, 500 req/day (separate quota). Works with Hermes."},
+  {"name": "groq-gpt-oss-20b", "label": "gpt-oss-20b (Groq)", "provider": "openai_compat", "id": "openai/gpt-oss-20b",
+   "base_url": "https://api.groq.com/openai/v1", "api_key_env": "GROQ_API_KEY",
+   "notes": "free tier: 8k tokens/min, 1000 req/day. Baseline only (too small a token budget for Hermes)."},
+  {"name": "groq-gpt-oss-120b", "label": "gpt-oss-120b (Groq)", "provider": "openai_compat", "id": "openai/gpt-oss-120b",
+   "base_url": "https://api.groq.com/openai/v1", "api_key_env": "GROQ_API_KEY",
+   "notes": "free tier: 8k tokens/min, 1000 req/day. Baseline only."},
+  {"name": "local-qwen3-8b", "label": "qwen3:8b (local Ollama)", "provider": "openai_compat", "id": "qwen3:8b",
+   "base_url": "http://localhost:11434/v1", "api_key_env": null,
+   "notes": "runs on this machine, slow (~9 tok/s). 40k context: baseline only, Hermes needs 64k."},
+  {"name": "none", "label": "none (mock harness only)", "provider": "none", "id": "none", "base_url": null, "api_key_env": null,
+   "notes": "for the mock harness, which calls no model."}
+]

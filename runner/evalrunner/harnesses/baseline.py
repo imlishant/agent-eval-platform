@@ -37,6 +37,7 @@ def load_skill(name: str) -> tuple[str, str]:
 class BaselineHarness(HarnessAdapter):
     id = "baseline"
     version = "1"
+    description = "Our own minimal tool-calling loop: bash, read_file, write_file; skills on request; memory file."
 
     def __init__(self, model_factory=get_model):
         self.model_factory = model_factory  # swapped for a scripted model in tests
