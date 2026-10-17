@@ -20,3 +20,10 @@
 - Check: run_trial output and API-stored errors contain no org_/account IDs (test with the real message shape).
 - Branch: fix/16-scrub-account-ids
 
+## FIX-17 · Experiment code can change mid-run (trials run on the working tree)   [bug · ready]  parent: main
+- Repro: experiment 2: switching to fix/16 while it ran made 2 trials run without failures.py (failure_category null).
+  experiments.code_sha is taken once at creation, so this is invisible in results.
+- Check: each trial records the code version it ran on; Compare flags trials whose version differs from the
+  experiment's. Operational rule in README/LIMITS: run experiments of record from a dedicated git worktree.
+- Branch: fix/17-code-version-per-trial
+
