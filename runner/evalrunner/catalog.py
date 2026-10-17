@@ -1,0 +1,33 @@
+"""Print every config and task as JSON, for the API.
+
+Usage:  python -m evalrunner.catalog
+The config ID is computed here (Python) only, so the API and the runner can never disagree on it.
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from .schema import Config, Task
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+def catalog() -> dict:
+    configs = []
+    for f in sorted((ROOT / "configs").glob("*.json")):
+        if f.name in ("judge.json", "prices.json"):
+            continue
+        cfg = Config.from_dict(json.loads(f.read_text()))
+        configs.append({"file": f.name, "name": cfg.name, "id": cfg.config_id(), "config": cfg.to_dict()})
+    tasks = []
+    for f in sorted((ROOT / "tasks").glob("*/task.yaml")):
+        t = Task.load(f.parent)
+        tasks.append({"id": t.id, "category": t.category, "hash": t.content_hash(), "sessions": len(t.sessions),
+                      "graders": [g["type"] for g in t.graders]})
+    return {"configs": configs, "tasks": tasks}
+
+
+if __name__ == "__main__":
+    print(json.dumps(catalog()))

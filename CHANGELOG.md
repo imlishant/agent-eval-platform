@@ -4,7 +4,15 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- API (NestJS + SQLite), stats, export.
+- Vue UI: Run, Compare, Trial pages.
+
+## [0.6.0] - 2026-10-18 · API, scheduler, statistics, export (`feat/api-stats`)
+- NestJS API over SQLite: experiments, trials, events, grades, config snapshots.
+- Scheduler with one concurrency lane per provider; invalid trials retried with backoff, then marked invalid.
+- Paired bootstrap over tasks (seeded): per-task deltas, 95% CI, verdict with "could be noise" message, minimum
+  detectable effect; same for cost (actual and Claude-list-price reference), tokens and latency.
+- JSON and CSV export. Tests: hand-computed example, invalid-pair dropping, no-difference coverage simulation,
+  end-to-end experiment through the real runner.
 
 ## [0.5.0] - 2026-10-16 · Hermes harness and OS-level isolation (`feat/hermes-adapter`)
 - `hermes` harness: headless Hermes Agent per session, JSON events mapped to our trace, memory reads/writes from

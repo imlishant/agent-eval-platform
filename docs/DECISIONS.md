@@ -101,3 +101,21 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - Observed cost effect (one task): memory on 50k tokens / score 1.0; memory off 210k tokens / score 0.0.
 - Gemini free TPM (250k) can be hit by a single long Hermes trial ⇒ such trials come back `invalid` (HTTP 429)
   and must be retried later by the API; never scored 0.
+
+## D16 · 2026-10-18 · API design (NestJS 11 + better-sqlite3)
+- NestJS 11.2.7, not 12: v12 is ESM-only and Jest (ts-jest, CommonJS) cannot load it; 11 is the mature line.
+- better-sqlite3 (as planned); Node's built-in `node:sqlite` works but is still marked experimental.
+- Config IDs come only from the Python runner (`evalrunner.catalog`), so API and runner can never disagree on a hash.
+  The full config JSON is snapshotted into the `configs` table when an experiment is created.
+- Scheduler: in-process, polls every 500 ms; **one lane per provider** with its own limit (Ollama 1, Gemini 1,
+  Groq 2, mock 4; max 4 total). Trials are created interleaved (A and B per task and trial index) so a quota
+  cut-off leaves both sides equally covered. Restart-safe: `running` → `pending` on boot; results saved in one
+  transaction.
+- Invalid trials: retried up to 3 attempts with 60 s × attempt backoff (free-tier quotas reset per minute);
+  then `invalid`; `POST /experiments/:id/retry-invalid` requeues them (e.g. after the daily quota resets).
+- Stats as PLAN §8 (seeded bootstrap over tasks, 10,000 resamples). **Change from PLAN:** minimum detectable effect
+  = (1.96 + 0.84)/1.96 × CI half-width ≈ 1.43 × half-width (80% power, two-sided 5%), not "2 × half-width",
+  which overstated it. Also reported: within-task SD (noise between repeated runs) and between-task SD, to justify N.
+- Coverage check (test): 300 simulated no-difference experiments (20 tasks × 3 trials) → CI contains 0 in
+  88–99% of them (percentile bootstrap slightly under-covers with 20 tasks; noted in LIMITS).
+- Cost: actual (free = $0, `configs/prices.json`) and reference (same tokens at Claude Opus 5.5 list price).
