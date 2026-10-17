@@ -18,3 +18,4 @@ dist/
 *.sqlite
 data/
 .DS_Store
+data-api.log

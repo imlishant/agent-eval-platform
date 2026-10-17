@@ -21,6 +21,13 @@ describe('paired comparison', () => {
     // the bootstrap mean can only be one of the averages of 3 deltas from {+1/3, +1/3, -1/3}
     expect(c.ci_low).toBeCloseTo(-1 / 3);
     expect(c.ci_high).toBeCloseTo(1 / 3);
+    expect(c.verdict).toBe('too few tasks'); // 3 < MIN_TASKS: no verdict from a 3-task bootstrap
+  });
+
+  test('no detectable difference when the CI includes 0', () => {
+    const a = rows({ t1: [1], t2: [0], t3: [1], t4: [0], t5: [1], t6: [0] });
+    const b = rows({ t1: [0], t2: [1], t3: [1], t4: [0], t5: [0], t6: [1] });
+    const c = compare(a, b);
     expect(c.verdict).toBe('no detectable difference');
     expect(c.message).toMatch(/could be noise/);
   });

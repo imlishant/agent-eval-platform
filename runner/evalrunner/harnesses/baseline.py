@@ -86,7 +86,7 @@ class BaselineHarness(HarnessAdapter):
                     continue
                 trace.add("model_call", step=step, input_tokens=resp.input_tokens,
                           output_tokens=resp.output_tokens, latency_ms=resp.latency_ms,
-                          attempts=resp.attempts)
+                          attempts=resp.attempts, waited_ms=resp.waited_ms)
                 messages.append(resp.assistant_message)
                 if resp.text:
                     trace.add("message", role="assistant", text=resp.text)

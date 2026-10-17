@@ -26,7 +26,9 @@ def catalog() -> dict:
         t = Task.load(f.parent)
         tasks.append({"id": t.id, "category": t.category, "hash": t.content_hash(), "sessions": len(t.sessions),
                       "graders": [g["type"] for g in t.graders]})
-    return {"configs": configs, "tasks": tasks}
+    skills = [{"name": f.stem, "description": f.read_text().splitlines()[0].lstrip("# ").strip()}
+              for f in sorted((ROOT / "skills").glob("*.md"))]
+    return {"configs": configs, "tasks": tasks, "skills": skills}
 
 
 if __name__ == "__main__":

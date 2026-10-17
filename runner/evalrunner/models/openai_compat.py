@@ -40,6 +40,7 @@ class OpenAICompatAdapter(ModelAdapter):
                       max_tokens=max_tokens)
         if tools:
             kwargs["tools"] = tools
+        waited = 0.0
         for attempt in range(1, MAX_ATTEMPTS + 1):
             started = time.time()
             try:
@@ -48,7 +49,9 @@ class OpenAICompatAdapter(ModelAdapter):
             except RETRYABLE as e:
                 if attempt == MAX_ATTEMPTS:
                     raise ProviderError(f"{type(e).__name__} after {attempt} attempts: {e}") from e
-                self.sleep(_wait_seconds(e, attempt))
+                pause = _wait_seconds(e, attempt)
+                waited += pause
+                self.sleep(pause)
             except openai.BadRequestError as e:
                 if BAD_GENERATION.search(str(e.message)):
                     raise ModelOutputError(str(e.message)[:500]) from e  # the agent's mistake
@@ -66,6 +69,7 @@ class OpenAICompatAdapter(ModelAdapter):
             output_tokens=getattr(r.usage, "completion_tokens", 0) or 0,
             latency_ms=int((time.time() - started) * 1000),
             attempts=attempt,
+            waited_ms=int(waited * 1000),
             # keep provider extras (e.g. Gemini thought signatures) so the next turn is valid
             assistant_message=_replayable(msg.model_dump(exclude_none=True)),
         )

@@ -52,6 +52,7 @@ def test_retries_rate_limit_then_succeeds_and_counts_attempts():
     r = a.chat([], [], temperature=0, max_tokens=10)
     assert r.text == "hi" and r.attempts == 3 and fake.calls == 3
     assert all(2 <= w <= 3 for w in waits)                 # honoured retry-after: 2
+    assert r.waited_ms == int(sum(waits) * 1000)           # waiting is reported, so latency can exclude it
     assert "reasoning" not in r.assistant_message          # provider-only field dropped
 
 

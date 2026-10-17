@@ -37,6 +37,7 @@ class ModelResponse:
     output_tokens: int
     latency_ms: int
     attempts: int                 # 1 = no retries were needed
+    waited_ms: int = 0            # time spent waiting out rate limits before retries (not the agent's speed)
     assistant_message: dict = field(default_factory=dict)  # append this to the conversation as-is
 
 

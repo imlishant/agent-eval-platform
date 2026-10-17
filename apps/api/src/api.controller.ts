@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Header, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Header, Param, ParseIntPipe, Post } from '@nestjs/common';
 import { CreateExperiment, ExperimentsService } from './experiments.service';
 import { RunnerService } from './runner.service';
 import { SchedulerService } from './scheduler.service';
@@ -20,6 +20,16 @@ export class ApiController {
   @Get('catalog')
   catalog() {
     return this.runner.catalog();
+  }
+
+  /** Define a new config (saved as configs/<name>.json; ID = hash of its content). */
+  @Post('configs')
+  async createConfig(@Body() body: any) {
+    try {
+      return await this.runner.createConfig(body);
+    } catch (e: any) {
+      throw new BadRequestException(e.message);
+    }
   }
 
   @Post('experiments')
