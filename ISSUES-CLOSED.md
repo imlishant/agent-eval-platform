@@ -68,3 +68,17 @@
   experiment's. Operational rule in README/LIMITS: run experiments of record from a dedicated git worktree.
 - Branch: fix/17-code-version-per-trial
 - Branch fix/17-code-version-per-trial · Evidence: jest mismatch 0 then 1; experiment 3 all trials on 63b8c0c, mismatch 0.
+
+## FEAT-18 · Simpler UI: A/B config builders, model registry, harness list   [feature · closed]  parent: main
+- A and B each choose harness × model × settings independently; configs saved automatically (content-hash ID kept).
+- Models page: add an OpenAI-compatible model from the UI and test the connection; harnesses listed with what they support and how to add one (code).
+- Home = runs list; new experiment on its own page; advanced settings folded.
+- Check: create an experiment from two built configs end to end (API test); screenshots of every page, light + dark.
+- Branch: feat/ui-config-builder
+- Branch feat/ui-config-builder · Evidence: 79 pytest, 15 jest, web build; screenshots of Runs, New experiment, Models & harnesses (light + dark).
+
+## FIX-19 · Runs list shows "running" for finished experiments              [bug · closed]  parent: main
+- Repro: experiment 1 (32/32 finished, 1 invalid) listed as "running" on Home; status only updates when the experiment itself is opened (get()).
+- Check: list() reports done for every experiment with no pending/running trials (API test).
+- Branch: fix/19-stale-experiment-status
+- Branch fix/19-stale-experiment-status · Evidence: test fails before, passes after.

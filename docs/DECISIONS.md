@@ -147,3 +147,15 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - FIX-17: a running experiment executes the working tree; switching branches mid-run silently changed the code under
   experiment 2. Each trial now records `code_version`; Compare warns when it differs from the experiment's.
   Operational rule: run experiments of record from a dedicated, untouched git worktree.
+
+## D20 · 2026-10-18 · UI: build A and B from harness × model × settings; models are data, harnesses are code
+- The user found the first UI too complex. Now: Runs (home), New experiment (two builders side by side, "A → B"
+  copy, "What changes" names the axes and warns when 0 or >1 differ), Models & harnesses.
+- Configs built in the UI are saved automatically as `configs/<harness>-<model>-<id6>.json`; identical content reuses
+  the existing file (same ID), so versioning by content hash is unchanged.
+- Only the settings a harness uses are sent (Hermes has no temperature), so an unused knob never creates a fake axis.
+  Same default time budget for every harness (an earlier default silently made baseline vs Hermes a 2-axis comparison).
+- Models: `configs/models.json` registry; add from the UI and test with one real tool-calling request; keys stay in
+  `.env` and only the variable NAME is stored (a key-looking value is rejected).
+- Harnesses: cannot be added from the UI by design: a harness is an adapter (code), which is what the PDF asks to show.
+  The page lists each harness, the settings it uses, its requirements, and the steps to add one.
