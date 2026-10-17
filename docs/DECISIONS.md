@@ -119,3 +119,15 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
 - Coverage check (test): 300 simulated no-difference experiments (20 tasks × 3 trials) → CI contains 0 in
   88–99% of them (percentile bootstrap slightly under-covers with 20 tasks; noted in LIMITS).
 - Cost: actual (free = $0, `configs/prices.json`) and reference (same tokens at Claude Opus 5.5 list price).
+
+## D17 · 2026-10-18 · Three measurement bugs found by looking at a live run in the UI
+1. **Provider-rejected tool calls were treated as infra failures.** Groq returns HTTP 400 "Failed to parse tool call
+   arguments as JSON" when the *model* writes bad tool arguments. Marking that `invalid` and retrying hid the mistake
+   and inflated the weaker model's score (it got re-rolled until it succeeded). Now: `bad_tool_args` agent error in
+   the trace, the model is told, the step counts. (`ModelOutputError`.)
+2. **Verdicts from too few tasks.** With 2 finished tasks the bootstrap can only take ~3 values, yet the UI showed
+   "B lower" for latency. Now no verdict below 5 finished tasks ("too few tasks to judge").
+3. **Latency included our rate-limit waits.** A trial with 1.3 s of model time showed 8.0 s because of Groq quota
+   back-off. Trial latency now excludes retry waits (`rate_limit_wait_ms` recorded separately; `wall_ms` kept).
+   Hermes's internal retries are not visible to us, so Hermes latency may still include some waiting (LIMITS).
+- Lesson for DESIGN.md: inspecting real trials is part of validating the platform, not only the agents.
