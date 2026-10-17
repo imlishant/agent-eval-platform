@@ -31,6 +31,14 @@ export function laneOf(config: any): string {
   }
 }
 
+/** Same account-ID patterns as runner/evalrunner/isolation.py: never store or export provider account IDs. */
+export function scrubIds(text: string): string {
+  return text
+    .replace(/\borg_[A-Za-z0-9]{8,}/g, 'org_[REDACTED]')
+    .replace(/\bprojects\/\d{6,}/g, 'projects/[REDACTED]')
+    .replace(/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/g, '[REDACTED_EMAIL]');
+}
+
 interface Prices { actual: Record<string, { input: number; output: number }>; reference: { input: number; output: number } }
 
 @Injectable()
@@ -88,7 +96,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
         timeoutMs,
       );
     } catch (e: any) {
-      result = { status: 'invalid', error: `runner failed: ${String(e.message ?? e).slice(0, 1000)}` };
+      result = { status: 'invalid', error: scrubIds(`runner failed: ${String(e.message ?? e).slice(0, 1000)}`) };
     }
     this.save(id, result, config);
   }
@@ -104,9 +112,9 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
         const retry = attempts < MAX_ATTEMPTS;
         db.prepare(
           `UPDATE trials SET status = ?, error = ?, not_before = ?, finished_at = ?, score = NULL, passed = NULL WHERE id = ?`,
-        ).run(retry ? 'pending' : 'invalid', r.error ?? 'unknown error', Date.now() + RETRY_BASE_MS * attempts,
+        ).run(retry ? 'pending' : 'invalid', scrubIds(String(r.error ?? 'unknown error')), Date.now() + RETRY_BASE_MS * attempts,
           new Date().toISOString(), id);
-        this.log.warn(`trial ${id} invalid (attempt ${attempts}/${MAX_ATTEMPTS}${retry ? ', will retry' : ''}): ${String(r.error).slice(0, 160)}`);
+        this.log.warn(`trial ${id} invalid (attempt ${attempts}/${MAX_ATTEMPTS}${retry ? ', will retry' : ''}): ${scrubIds(String(r.error)).slice(0, 160)}`);
         return;
       }
       const inTok = r.usage?.input_tokens ?? 0;

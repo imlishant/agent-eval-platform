@@ -22,6 +22,12 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parents[2]
 TOOL_CACHE = Path.home() / ".cache" / "evalrunner"   # shared, prepared-once tool installs (e.g. Hermes base)
 SECRET_NAME = re.compile(r"KEY|TOKEN|SECRET|PASSWORD", re.I)
+# account identifiers that providers echo in error messages (e.g. Groq 429: "organization `org_…`")
+ACCOUNT_IDS = [
+    (re.compile(r"\borg_[A-Za-z0-9]{8,}"), "org_[REDACTED]"),
+    (re.compile(r"\bprojects/\d{6,}"), "projects/[REDACTED]"),
+    (re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"), "[REDACTED_EMAIL]"),
+]
 
 
 def level() -> str:
@@ -65,11 +71,13 @@ def secret_values() -> dict[str, str]:
 
 
 def scrub(obj, secrets: dict[str, str] | None = None):
-    """Replace every secret value found anywhere in obj (str/list/dict) with [REDACTED:<NAME>]."""
+    """Replace secret values (as [REDACTED:<NAME>]) and account identifiers anywhere in obj (str/list/dict)."""
     secrets = secret_values() if secrets is None else secrets
     if isinstance(obj, str):
         for name, value in secrets.items():
             obj = obj.replace(value, f"[REDACTED:{name}]")
+        for pattern, replacement in ACCOUNT_IDS:
+            obj = pattern.sub(replacement, obj)
         return obj
     if isinstance(obj, list):
         return [scrub(x, secrets) for x in obj]
