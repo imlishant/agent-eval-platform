@@ -7,7 +7,7 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 tasks under two configurations, several times each, grades every run, and compares the two with confidence
 intervals, so a real improvement can be told apart from noise.
 
-> **Version 0.5.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
+> **Version 0.6.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
 
 ## Progress
 
@@ -22,8 +22,8 @@ intervals, so a real improvement can be told apart from noise.
 | Graders: exact_match, file_check, unit_tests, llm_judge | ✅ done | each deterministic grader self-tested |
 | 20 tasks (code, exact, skill, memory, judge) | ✅ done | `tasks/` |
 | Judge validation (agreement with human labels, Cohen's kappa) | 🟡 provisional | labels await human review |
-| API (NestJS + SQLite): experiments, worker pool, stats, export | 🔜 next | |
-| UI (Vue 3): Run, Compare, Trial pages | ⬜ todo | |
+| API (NestJS + SQLite): experiments, worker pool, retries, stats, export | ✅ done | `apps/api`, DECISIONS D16 |
+| UI (Vue 3): Run, Compare, Trial pages | 🔜 next | |
 | Failure analysis (stretch) | ⬜ todo | |
 | Experiment + report | ⬜ todo | `docs/EXPERIMENT.md` |
 | Docker (`docker compose up`) | ⬜ todo | |
@@ -71,6 +71,24 @@ Keys (`.env`, never committed):
 | `GROQ_API_KEY` | fast hosted open-weight models for development | console.groq.com |
 | `GEMINI_API_KEY` | Gemini Flash Lite (experiments, Hermes) and Gemma (LLM judge) | aistudio.google.com |
 | none | local model via Ollama: `ollama pull qwen3:8b` | runs on your machine |
+
+## Run the API
+
+```bash
+cd apps/api && npm install && npm run start:dev      # http://localhost:3000/api
+```
+
+| Endpoint | What it does |
+|---|---|
+| `GET /api/catalog` | configs (with content-hash IDs) and tasks |
+| `POST /api/experiments` | `{name, hypothesis, config_a, config_b, task_ids?, n_trials?}` → queues every task × config × trial |
+| `GET /api/experiments/:id` | status and progress (pending / running / done / invalid) |
+| `GET /api/experiments/:id/compare` | per-task deltas, mean delta, 95% bootstrap CI, verdict, for score, cost, tokens and latency |
+| `GET /api/trials/:id` | one trial: full trace, grades with reasoning |
+| `POST /api/experiments/:id/retry-invalid` | re-queue trials that failed for infrastructure reasons |
+| `GET /api/experiments/:id/export.json` / `export.csv` | export results |
+
+Tests: `cd apps/api && npm test` (statistics + an end-to-end experiment through the real runner with the free mock harness).
 
 ## Run one trial
 
@@ -153,7 +171,8 @@ configs/       configurations (JSON) and the judge model (judge.json)
 skills/        skill documents the agent can load when a config enables them
 judge_validation/  human-labelled judge outputs + validate_judge.py (accuracy, Cohen's kappa)
 docs/          DECISIONS.md (why), DESIGN.md, LIMITS.md, EXPERIMENT.md
-apps/api, apps/web   NestJS API and Vue UI (coming)
+apps/api       NestJS API: experiments, scheduler, statistics, export (SQLite in data/)
+apps/web       Vue UI (coming)
 ```
 
 ## Documentation

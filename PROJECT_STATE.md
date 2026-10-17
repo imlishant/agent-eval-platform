@@ -1,15 +1,16 @@
 # PROJECT_STATE.md
 
 ## Status
-Spikes done (DECISIONS D6–D10). Runner core + baseline harness + OpenAI-compatible model adapter built and tested (14 pytest), real trials pass on Groq gpt-oss-20b and local qwen3:8b.
+v0.5.0. Runner, mock/baseline/hermes harnesses, OpenAI-compatible model adapter, 4 graders, 20 tasks, judge validation (provisional), OS sandbox (macOS) + secret scrubbing. 65 pytest passing. Branch: feat/api-stats.
 
 ## Current objective
 Build the Agent Evals Platform per `PLAN.md`, all PDF deliverables, free providers only.
 
 ## Next action
-FEAT-4 in ISSUES.md: graders + 20 tasks + grader self-tests. Then Hermes adapter, API + stats, UI, experiments, docs, Docker.
+FEAT-7 (API + stats) → UI → failure analysis → experiments (Gemini quota: see DECISIONS D10, D15) → docs → Docker (CHORE-8).
 
 ## Needs from the user
+- Review judge_validation/labels.json (CHORE-5).
 - Install Docker Desktop/OrbStack before the Docker step.
 
 ## Blocked on

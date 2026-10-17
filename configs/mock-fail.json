@@ -1,0 +1,3 @@
+{"name": "mock-fail", "harness": "mock",
+ "model": {"provider": "none", "id": "none"},
+ "settings": {"extra": {"behavior": "fail"}}}

@@ -145,7 +145,7 @@ Tasks are custom (not from public benchmarks) to reduce contamination. Difficult
 1. Per task and config: mean score over N trials.
 2. Per task: `delta = mean_B − mean_A`. Show every delta.
 3. Mean delta over tasks. CI: resample tasks with replacement 10,000×, recompute, take 2.5/97.5 percentiles.
-4. CI contains 0 → UI shows "No detectable difference (could be noise)". Also show minimum detectable effect ≈ 2 × CI half-width.
+4. CI contains 0 → UI shows "No detectable difference (could be noise)". Also show minimum detectable effect ≈ 1.43 × CI half-width (80% power, two-sided 5%; see DECISIONS D16).
 5. Same treatment for cost, tokens, latency.
 6. Invalid trials: drop that task-trial pair from both configs; show count.
 7. Why N=3: between-task variance usually exceeds within-task variance, so more tasks help more than more trials; a pilot measures both (§11) and we report the measured within-task SD to justify N after the fact.
