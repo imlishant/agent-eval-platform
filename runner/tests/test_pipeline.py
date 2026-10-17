@@ -44,3 +44,9 @@ def test_cli_prints_one_json_object(tmp_path):
     out = subprocess.run([sys.executable, "-m", "evalrunner.run_trial", str(spec)],
                          capture_output=True, text=True, check=True).stdout
     assert json.loads(out)["score"] == 1.0
+
+
+def test_each_trial_records_the_code_version_it_ran_on():
+    from evalrunner.version import code_version
+    r = run({"task_dir": str(TASK), "config": mock_config("solve")})
+    assert r["code_version"] == code_version() and r["code_version"] != "unknown"

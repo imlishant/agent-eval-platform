@@ -20,6 +20,7 @@ export interface CompareResponse {
   totals: { config: string; config_id: string; trials: number; invalid: number; mean_score: number | null;
     input_tokens: number | null; output_tokens: number | null; cost_usd: number | null; ref_cost_usd: number | null;
     mean_latency_ms: number | null }[];
+  code_mismatch: number;
 }
 export interface TrialRow {
   id: number; task_id: string; config_id: string; config_name: string; trial_index: number; status: string;
