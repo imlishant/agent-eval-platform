@@ -66,6 +66,10 @@ export class DbService implements OnModuleDestroy {
     this.db.pragma('journal_mode = WAL'); // readers (UI) never block the writer (scheduler)
     this.db.pragma('foreign_keys = ON');
     this.db.exec(SCHEMA);
+    // additive migrations for databases created by earlier versions
+    const cols = (this.db.prepare(`PRAGMA table_info(trials)`).all() as { name: string }[]).map((c) => c.name);
+    if (!cols.includes('failure_category')) this.db.exec(`ALTER TABLE trials ADD COLUMN failure_category TEXT`);
+    if (!cols.includes('failure_signals')) this.db.exec(`ALTER TABLE trials ADD COLUMN failure_signals TEXT`);
     // A restart while trials were running: put them back in the queue (results are saved atomically,
     // so a running trial has written nothing yet).
     this.db.prepare(`UPDATE trials SET status = 'pending' WHERE status = 'running'`).run();

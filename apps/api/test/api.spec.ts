@@ -58,6 +58,12 @@ test('mock-fail vs mock-solve: B is better on every task, results persisted and 
   expect(t.grades.length).toBeGreaterThan(0);
   expect(t.isolation).toBeTruthy();
 
+  // every failed trial (mock-fail does nothing) has a category; mock-fail answers without tools -> gave_up_early
+  const failA = c.failures.filter((f: any) => f.config_id === c.experiment.config_a.id);
+  expect(failA.reduce((s: number, f: any) => s + f.n, 0)).toBe(10);
+  expect(failA.map((f: any) => f.category)).toEqual(['gave_up_early']);
+  expect(c.failures.some((f: any) => f.config_id === c.experiment.config_b.id)).toBe(false);
+
   const csv = svc.exportCsv(exp.id).trim().split('\n');
   expect(csv).toHaveLength(1 + 20);
   expect(csv[0]).toContain('task_id,config_name');

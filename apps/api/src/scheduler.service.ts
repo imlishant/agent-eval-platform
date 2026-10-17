@@ -116,10 +116,11 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
       const ref = (inTok * this.prices.reference.input + outTok * this.prices.reference.output) / 1e6;
       db.prepare(
         `UPDATE trials SET status = 'done', score = ?, passed = ?, input_tokens = ?, output_tokens = ?, cost_usd = ?,
-         ref_cost_usd = ?, latency_ms = ?, error = NULL, harness_version = ?, isolation = ?, task_hash = ?, finished_at = ?
+         ref_cost_usd = ?, latency_ms = ?, error = NULL, harness_version = ?, isolation = ?, task_hash = ?, finished_at = ?,
+         failure_category = ?, failure_signals = ?
          WHERE id = ?`,
       ).run(r.score, r.passed ? 1 : 0, inTok, outTok, cost, ref, r.latency_ms, r.harness_version, r.isolation,
-        r.task_hash, new Date().toISOString(), id);
+        r.task_hash, new Date().toISOString(), r.failure?.category ?? null, JSON.stringify(r.failure?.signals ?? []), id);
       const ev = db.prepare(`INSERT INTO events (trial_id, seq, session, type, ts, payload_json) VALUES (?, ?, ?, ?, ?, ?)`);
       for (const e of r.trace ?? []) ev.run(id, e.seq, e.session, e.type, e.ts, JSON.stringify(e.payload));
       const gr = db.prepare(`INSERT INTO grades (trial_id, grader, score, passed, reasoning) VALUES (?, ?, ?, ?, ?)`);

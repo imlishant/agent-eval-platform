@@ -15,7 +15,8 @@
         <div class="row summary">
           <div><div class="muted small">Score</div><div class="kpi" :class="scoreTone">{{ t.score === null ? '–' : t.score.toFixed(2) }}</div></div>
           <div><div class="muted small">Status</div><span class="pill" :class="{ good: t.status === 'done' && t.passed, bad: t.status === 'invalid' || (t.status === 'done' && !t.passed) }">{{ t.status === 'done' ? (t.passed ? 'passed' : 'failed') : t.status }}</span></div>
-          <div v-if="t.failure_category"><div class="muted small">Failure category</div><span class="pill bad">{{ t.failure_category }}</span></div>
+          <div v-if="t.failure_category"><div class="muted small">Failure category</div><span class="pill bad" :title="FAILURES[t.failure_category]">{{ t.failure_category }}</span>
+            <div class="small muted" v-if="signals.length > 1">also: {{ signals.filter((x) => x !== t!.failure_category).join(', ') }}</div></div>
           <div><div class="muted small">Tokens in / out</div>{{ fmt.int(t.input_tokens) }} / {{ fmt.int(t.output_tokens) }}</div>
           <div><div class="muted small">Latency</div>{{ t.latency_ms === null ? '–' : (t.latency_ms / 1000).toFixed(1) + ' s' }}</div>
           <div><div class="muted small">At Opus 5.5 price</div>{{ fmt.usd(t.ref_cost_usd) }}</div>
@@ -65,7 +66,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue';
-import { api, fmt, type Trial, type TrialEvent } from '../api';
+import { api, fmt, FAILURES, type Trial, type TrialEvent } from '../api';
 
 const props = defineProps<{ id: number }>();
 const t = ref<Trial>();
@@ -78,6 +79,7 @@ const LABEL: Record<string, string> = {
 };
 const short = (s: string) => (s.length > 400 ? s.slice(0, 400) + '…' : s);
 const scoreTone = computed(() => (t.value?.score === null ? '' : t.value!.score! >= 1 ? 'good' : t.value!.score! > 0 ? '' : 'bad'));
+const signals = computed<string[]>(() => JSON.parse(t.value?.failure_signals || '[]'));
 const bySession = computed(() => {
   const g: Record<number, TrialEvent[]> = {};
   for (const e of t.value?.events ?? []) (g[e.session] ??= []).push(e);

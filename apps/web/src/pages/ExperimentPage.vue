@@ -86,6 +86,22 @@
         </div>
       </section>
 
+      <!-- failure analysis -->
+      <section class="card" v-if="failureRows.length">
+        <h2>Why trials failed</h2>
+        <p class="small muted">Each failed trial gets one category from its trace (first matching rule). Open a trial to see the evidence.</p>
+        <table>
+          <thead><tr><th>Category</th><th class="num">A</th><th class="num">B</th><th class="num">B − A</th></tr></thead>
+          <tbody>
+            <tr v-for="r in failureRows" :key="r.category">
+              <td><b>{{ r.category }}</b><div class="small muted">{{ FAILURES[r.category] ?? '' }}</div></td>
+              <td class="num">{{ r.a }}</td><td class="num">{{ r.b }}</td>
+              <td class="num" :class="r.b > r.a ? 'bad' : r.b < r.a ? 'good' : 'muted'">{{ r.b - r.a > 0 ? '+' : '' }}{{ r.b - r.a }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
+
       <!-- per-task -->
       <section class="card">
         <h2>Per task</h2>
@@ -118,7 +134,7 @@
 
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { api, fmt, type CompareResponse, type Comparison, type TrialRow } from '../api';
+import { api, fmt, FAILURES, type CompareResponse, type Comparison, type TrialRow } from '../api';
 import CiBar from '../components/CiBar.vue';
 import ProgressBar from '../components/ProgressBar.vue';
 import TrialDots from '../components/TrialDots.vue';
@@ -147,6 +163,19 @@ const metricRows: MetricRow[] = [
   { key: 'ref_cost_usd', label: 'Cost at Claude Opus 5.5 list price', note: '$4 / $20 per 1M tokens in / out', lowerIsBetter: true,
     f: (x: number) => (x < 0 ? '−' : '') + fmt.usd(Math.abs(x)) },
 ];
+
+const failureRows = computed(() => {
+  if (!c.value) return [];
+  const rows = new Map<string, { category: string; a: number; b: number }>();
+  for (const f of c.value.failures) {
+    const r = rows.get(f.category) ?? { category: f.category, a: 0, b: 0 };
+    if (f.config_id === c.value.experiment.config_a.id) r.a += f.n;
+    else r.b += f.n;
+    rows.set(f.category, r);
+  }
+  const order = Object.keys(FAILURES);
+  return [...rows.values()].sort((x, y) => order.indexOf(x.category) - order.indexOf(y.category));
+});
 
 const taskRows = computed(() => {
   if (!c.value) return [];
