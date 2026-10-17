@@ -67,3 +67,14 @@ def test_scrub_removes_secret_values_everywhere(monkeypatch):
     monkeypatch.setenv("FAKE_API_KEY", "sk-test-1234567890")
     out = scrub({"trace": [{"payload": {"output": "GEMINI=x FAKE_API_KEY=sk-test-1234567890"}}]})
     assert "sk-test-1234567890" not in str(out) and "[REDACTED:FAKE_API_KEY]" in str(out)
+
+
+def test_scrub_removes_account_ids_from_provider_errors():
+    # shape of a real Groq 429 message (ID made up)
+    msg = ("RateLimitError after 4 attempts: Error code: 429 - Rate limit reached for model `openai/gpt-oss-120b` "
+           "in organization `org_01abcdefghij0123456789` service tier `on_demand`; contact ops@example.com, "
+           "projects/123456789012")
+    out = scrub({"status": "invalid", "error": msg}, secrets={})["error"]
+    assert "org_01abcdefghij" not in out and "org_[REDACTED]" in out
+    assert "ops@example.com" not in out and "123456789012" not in out
+    assert "Rate limit reached" in out                       # the useful part stays
