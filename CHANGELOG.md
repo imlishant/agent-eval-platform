@@ -4,7 +4,14 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- Failure analysis (rule-based categories from the trace).
+- The experiment of record and its report.
+
+## [0.8.0] - 2026-10-18 · Failure analysis (`feat/failure-analysis`)
+- Failed trials get a category from their trace (timeout, step_exhaustion, loop, bad_tool_args, wrong_tool,
+  grader_disagreement, gave_up_early, wrong_answer); counts per config on Compare, category + signals on Trial.
+- `fix/16-scrub-account-ids`: provider account IDs no longer stored, exported or logged.
+- `fix/17-code-version-per-trial`: each trial records its code version; Compare warns on mismatch.
+- `chore/12-retro-issue-records`: ISSUES-CLOSED.md, with honest records of 4 earlier fixes that skipped the flow.
 
 ## [0.7.0] - 2026-10-18 · UI (`feat/web-ui`)
 - Vue 3 UI: Run (define a config, start an experiment, shows which axes differ), Compare (verdict, CI chart,

@@ -131,3 +131,19 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
    back-off. Trial latency now excludes retry waits (`rate_limit_wait_ms` recorded separately; `wall_ms` kept).
    Hermes's internal retries are not visible to us, so Hermes latency may still include some waiting (LIMITS).
 - Lesson for DESIGN.md: inspecting real trials is part of validating the platform, not only the agents.
+
+## D18 · 2026-10-18 · Failure analysis: rule-based, from the trace only
+- Categories (PDF list + timeout + wrong_answer): timeout, step_exhaustion, loop (same call 3+ times),
+  bad_tool_args, wrong_tool, grader_disagreement, gave_up_early (no tool used / no answer), wrong_answer.
+- First matching rule = the category; every match is kept as a signal (a passed trial can still carry signals,
+  e.g. experiment 3: csv-region-totals passed after recovering from a bad tool call).
+- Why rules, not an LLM: each category points at concrete trace events a person can check; no extra cost or judge bias.
+- Limit: wrong_answer is a broad bucket (e.g. skill tasks failed because the house format was unknown). A finer
+  "missing knowledge" category would need task metadata; noted in LIMITS.
+
+## D19 · 2026-10-18 · Two more fixes, done through the fix/ branch flow
+- FIX-16: provider account IDs (Groq org ID in 429 messages) were stored, shown, exported and logged → scrubbed in
+  runner output, API errors and logs.
+- FIX-17: a running experiment executes the working tree; switching branches mid-run silently changed the code under
+  experiment 2. Each trial now records `code_version`; Compare warns when it differs from the experiment's.
+  Operational rule: run experiments of record from a dedicated, untouched git worktree.
