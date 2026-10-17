@@ -17,3 +17,8 @@
 - Check: create an experiment from two built configs end to end (API test); screenshots of every page, light + dark.
 - Branch: feat/ui-config-builder
 
+## FIX-19 · Runs list shows "running" for finished experiments              [bug · in-progress]  parent: main
+- Repro: experiment 1 (32/32 finished, 1 invalid) listed as "running" on Home; status only updates when the experiment itself is opened (get()).
+- Check: list() reports done for every experiment with no pending/running trials (API test).
+- Branch: fix/19-stale-experiment-status
+
