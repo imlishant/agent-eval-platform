@@ -140,6 +140,8 @@ test('model registry rejects bad entries and never accepts a key value', async (
   expect(() => runner.addModel({ name: 'ok-name', id: 'm', base_url: 'not a url' })).toThrow(/full URL/);
   expect(() => runner.addModel({ name: 'ok-name', id: 'm', base_url: 'https://x.ai/v1', api_key_env: 'sk-abc123secret' }))
     .toThrow(/NAME of an env var/);
+});
+
 test('the runs list reports a finished experiment as done without opening it first', async () => {
   const exp = await svc.create({ name: 'status', config_a: 'mock-fail.json', config_b: 'mock-solve.json',
     task_ids: ['count-csv-rows'], n_trials: 1 });
