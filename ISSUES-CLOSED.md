@@ -48,3 +48,23 @@
 
 ## CHORE-12 · Retroactive issue records                      [chore · closed]
 - Branch: chore/12-retro-issue-records · this file. From now on: the stop-trigger in change-flow (agent-system CF-3).
+
+## FEAT-11 · Failure analysis: categories from the trace                [feature · closed]  parent: main
+- Categories (PDF): wrong tool, hallucinated tool args, gave up early, loop / step exhaustion, grader disagreement (+ timeout).
+- Check: unit tests per rule on synthetic traces; Compare page shows counts per config; Trial page shows the category.
+- Branch: feat/failure-analysis
+- Branch feat/failure-analysis · Evidence: 79 pytest (one test per rule), 12 jest; experiment 3: every failed trial categorised.
+
+## FIX-16 · Provider account IDs stored in trial errors and exports      [bug · closed]  parent: main
+- Repro: experiment 1, trial 8 error: Groq 429 message contains "organization `org_…`"; stored in trials.error, shown in UI, exported to CSV/JSON.
+- Check: run_trial output and API-stored errors contain no org_/account IDs (test with the real message shape).
+- Branch: fix/16-scrub-account-ids
+- Branch fix/16-scrub-account-ids · merge 9ab6c6f · Evidence: test with real 429 shape fails before, passes after.
+
+## FIX-17 · Experiment code can change mid-run (trials run on the working tree)   [bug · closed]  parent: main
+- Repro: experiment 2: switching to fix/16 while it ran made 2 trials run without failures.py (failure_category null).
+  experiments.code_sha is taken once at creation, so this is invisible in results.
+- Check: each trial records the code version it ran on; Compare flags trials whose version differs from the
+  experiment's. Operational rule in README/LIMITS: run experiments of record from a dedicated git worktree.
+- Branch: fix/17-code-version-per-trial
+- Branch fix/17-code-version-per-trial · Evidence: jest mismatch 0 then 1; experiment 3 all trials on 63b8c0c, mismatch 0.

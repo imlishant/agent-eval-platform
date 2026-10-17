@@ -20,6 +20,7 @@ export interface CompareResponse {
   totals: { config: string; config_id: string; trials: number; invalid: number; mean_score: number | null;
     input_tokens: number | null; output_tokens: number | null; cost_usd: number | null; ref_cost_usd: number | null;
     mean_latency_ms: number | null }[];
+  failures: { config: string; config_id: string; category: string; n: number }[];
   code_mismatch: number;
 }
 export interface TrialRow {
@@ -30,7 +31,7 @@ export interface TrialEvent { seq: number; session: number; type: string; ts: nu
 export interface Trial extends TrialRow {
   experiment_id: number; input_tokens: number | null; output_tokens: number | null; latency_ms: number | null;
   cost_usd: number | null; ref_cost_usd: number | null; harness_version: string | null; isolation: string | null;
-  config_json: any; events: TrialEvent[]; grades: { grader: string; score: number; passed: number; reasoning: string }[];
+  failure_signals: string | null; config_json: any; events: TrialEvent[]; grades: { grader: string; score: number; passed: number; reasoning: string }[];
 }
 
 async function call<T>(path: string, init?: RequestInit): Promise<T> {
@@ -50,6 +51,18 @@ export const api = {
   createExperiment: (body: any) => call<any>('/experiments', { method: 'POST', body: JSON.stringify(body) }),
   createConfig: (body: any) => call<ConfigEntry>('/configs', { method: 'POST', body: JSON.stringify(body) }),
   retryInvalid: (id: number) => call<{ requeued: number }>(`/experiments/${id}/retry-invalid`, { method: 'POST' }),
+};
+
+/** Failure categories (runner/evalrunner/failures.py), in the order the rules are checked. */
+export const FAILURES: Record<string, string> = {
+  timeout: 'Hit the time limit',
+  step_exhaustion: 'Used all its steps without finishing',
+  loop: 'Repeated the same tool call 3+ times',
+  bad_tool_args: 'Called a tool with invalid or missing arguments',
+  wrong_tool: 'Called a tool that does not exist',
+  grader_disagreement: 'Graders disagree (one passes, one fails)',
+  gave_up_early: 'Answered without using any tool, or gave no answer',
+  wrong_answer: 'Finished normally, but the result is wrong',
 };
 
 export const fmt = {

@@ -12,6 +12,7 @@ import json
 import sys
 import time
 
+from .failures import classify
 from .graders import run_graders
 from .harnesses import get_harness
 from .isolation import level, scrub
@@ -51,6 +52,7 @@ def run(spec: dict) -> dict:
         "score": score,
         "passed": all(g.passed for g in grades),
         "grades": [g.__dict__ for g in grades],
+        "failure": classify(trace, grades),
         "usage": trace.usage(),
         "latency_ms": wall_ms - waited_ms,  # the agent's time; rate-limit waits are our quota, not its speed
         "wall_ms": wall_ms,

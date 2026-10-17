@@ -7,7 +7,7 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 tasks under two configurations, several times each, grades every run, and compares the two with confidence
 intervals, so a real improvement can be told apart from noise.
 
-> **Version 0.7.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
+> **Version 0.8.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
 
 ## Progress
 
@@ -24,8 +24,8 @@ intervals, so a real improvement can be told apart from noise.
 | Judge validation (agreement with human labels, Cohen's kappa) | 🟡 provisional | labels await human review |
 | API (NestJS + SQLite): experiments, worker pool, retries, stats, export | ✅ done | `apps/api`, DECISIONS D16 |
 | UI (Vue 3): Run, Compare, Trial pages; define configs | ✅ done | `apps/web` |
-| Failure analysis (stretch) | 🔜 next | |
-| Experiment + report | ⬜ todo | `docs/EXPERIMENT.md` |
+| Failure analysis (stretch): categories from the trace | ✅ done | `runner/evalrunner/failures.py`, DECISIONS D18 |
+| Experiment + report | 🔜 next | `docs/EXPERIMENT.md` |
 | Docker (`docker compose up`) | ⬜ todo | |
 | Design doc, known limits | ⬜ todo | `docs/DESIGN.md`, `docs/LIMITS.md` |
 
@@ -47,6 +47,8 @@ Vue UI  →  NestJS API  →  SQLite
 - **Trial** = one task × one config × one repetition. Agents are non-deterministic, so every task runs N times.
 - A provider failure (rate limit, server error) or a harness crash is retried; if it still fails the trial is marked
   **invalid** and left out of the comparison instead of being counted as a wrong answer.
+- **Reproducibility:** every trial records the code version it ran on; Compare warns if it differs from the
+  experiment's (the code changed mid-run). Run experiments of record from a git worktree nobody edits.
 - **Isolation:** every agent process runs in an OS sandbox that can only touch its own trial folder. This is not
   optional: in testing, an agent with a terminal searched the disk and copied a task's reference answer
   ([DECISIONS D14](docs/DECISIONS.md)). API keys are scrubbed from every result.

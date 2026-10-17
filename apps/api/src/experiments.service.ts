@@ -124,6 +124,7 @@ export class ExperimentsService {
       complete: e.progress.pending + e.progress.running === 0,
       metrics,
       totals: this.totals(id),
+      failures: this.failures(id),
       // trials that ran on different code than the experiment was created with (code changed mid-run)
       code_mismatch: (this.db.db.prepare(`SELECT COUNT(*) n FROM trials WHERE experiment_id = ? AND status = 'done'
         AND code_version IS NOT NULL AND code_version != ?`).get(id, e.code_sha) as { n: number }).n,
@@ -138,6 +139,16 @@ export class ExperimentsService {
                 FROM trials t JOIN configs c ON c.id = t.config_id WHERE t.experiment_id = ? GROUP BY t.config_id
                 ORDER BY t.config_id = (SELECT config_b FROM experiments WHERE id = ?)`)
       .all(id, id);
+  }
+
+  /** Failed trials per config and failure category, so a regression points to a cause. */
+  failures(id: number) {
+    return this.db.db
+      .prepare(`SELECT c.name AS config, t.config_id, t.failure_category AS category, COUNT(*) AS n
+                FROM trials t JOIN configs c ON c.id = t.config_id
+                WHERE t.experiment_id = ? AND t.status = 'done' AND t.failure_category IS NOT NULL
+                GROUP BY t.config_id, t.failure_category ORDER BY n DESC`)
+      .all(id);
   }
 
   /** Give finally-invalid trials another round (e.g. the next day, after a daily quota reset). */
@@ -171,7 +182,7 @@ export class ExperimentsService {
 
   exportCsv(id: number): string {
     const rows = this.trials(id) as any[];
-    const cols = ['id', 'task_id', 'config_name', 'config_id', 'trial_index', 'status', 'score', 'passed', 'input_tokens',
+    const cols = ['id', 'task_id', 'config_name', 'config_id', 'trial_index', 'status', 'score', 'passed', 'failure_category', 'input_tokens',
       'output_tokens', 'cost_usd', 'ref_cost_usd', 'latency_ms', 'attempts', 'error', 'harness_version', 'isolation', 'task_hash', 'code_version'];
     const cell = (v: unknown) => {
       const s = v === null || v === undefined ? '' : String(v);
