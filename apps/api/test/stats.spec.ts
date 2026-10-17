@@ -1,3 +1,4 @@
+import { scrubIds } from '../src/scheduler.service';
 import { bootstrapCI, compare, mulberry32, percentile, TrialRow } from '../src/stats';
 
 const rows = (data: Record<string, (number | null)[]>, status: Record<string, string[]> = {}): TrialRow[] =>
@@ -84,3 +85,10 @@ describe('paired comparison', () => {
     expect(percentile([0, 10], 0.5)).toBe(5);
   });
 });
+
+test('account IDs are scrubbed from stored errors', () => {
+  const out = scrubIds('429 in organization `org_01abcdefghij0123456789` (ops@example.com) projects/123456789012');
+  expect(out).not.toMatch(/org_01abc|ops@example|123456789012/);
+  expect(out).toContain('org_[REDACTED]');
+});
+
