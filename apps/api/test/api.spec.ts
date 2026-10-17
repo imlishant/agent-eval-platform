@@ -117,3 +117,16 @@ test('a config defined through the API is saved, validated and gets a content-ha
     rmSync(join(REPO, 'configs', `${name}-bad.json`), { force: true });
   }
 });
+
+test('the runs list reports a finished experiment as done without opening it first', async () => {
+  const exp = await svc.create({ name: 'status', config_a: 'mock-fail.json', config_b: 'mock-solve.json',
+    task_ids: ['count-csv-rows'], n_trials: 1 });
+  const db: any = (svc as any).db.db;
+  for (let i = 0; i < 200; i++) {
+    const { n } = db.prepare(`SELECT COUNT(*) n FROM trials WHERE experiment_id = ? AND status IN ('pending','running')`).get(exp.id);
+    if (n === 0) break;
+    await new Promise((r) => setTimeout(r, 100));
+  }
+  expect(svc.list().find((e: any) => e.id === exp.id).status).toBe('done');
+});
+
