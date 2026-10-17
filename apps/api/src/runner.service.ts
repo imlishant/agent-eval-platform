@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { execFile } from 'child_process';
+import { createHash } from 'crypto';
 import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'fs';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -43,13 +44,18 @@ export class RunnerService {
     }
   }
 
+  /** Same format as runner/evalrunner/version.py, so experiment and trial versions can be compared. */
   async codeSha(): Promise<string> {
+    if (process.env.CODE_SHA) return process.env.CODE_SHA;
     try {
-      const { stdout } = await run('git', ['rev-parse', '--short', 'HEAD'], { cwd: REPO });
-      const { stdout: dirty } = await run('git', ['status', '--porcelain'], { cwd: REPO });
-      return stdout.trim() + (dirty.trim() ? '-dirty' : '');
+      const git = async (...args: string[]) => (await run('git', args, { cwd: REPO, maxBuffer: 50e6 })).stdout;
+      const sha = (await git('rev-parse', '--short', 'HEAD')).trim();
+      const status = await git('status', '--porcelain');
+      if (!status.trim()) return sha;
+      const diff = await git('diff', 'HEAD');
+      return `${sha}-dirty.${createHash('sha256').update(status + diff).digest('hex').slice(0, 8)}`;
     } catch {
-      return process.env.CODE_SHA ?? 'unknown';
+      return 'unknown';
     }
   }
 

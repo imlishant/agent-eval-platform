@@ -124,6 +124,9 @@ export class ExperimentsService {
       complete: e.progress.pending + e.progress.running === 0,
       metrics,
       totals: this.totals(id),
+      // trials that ran on different code than the experiment was created with (code changed mid-run)
+      code_mismatch: (this.db.db.prepare(`SELECT COUNT(*) n FROM trials WHERE experiment_id = ? AND status = 'done'
+        AND code_version IS NOT NULL AND code_version != ?`).get(id, e.code_sha) as { n: number }).n,
     };
   }
 
@@ -169,7 +172,7 @@ export class ExperimentsService {
   exportCsv(id: number): string {
     const rows = this.trials(id) as any[];
     const cols = ['id', 'task_id', 'config_name', 'config_id', 'trial_index', 'status', 'score', 'passed', 'input_tokens',
-      'output_tokens', 'cost_usd', 'ref_cost_usd', 'latency_ms', 'attempts', 'error', 'harness_version', 'isolation', 'task_hash'];
+      'output_tokens', 'cost_usd', 'ref_cost_usd', 'latency_ms', 'attempts', 'error', 'harness_version', 'isolation', 'task_hash', 'code_version'];
     const cell = (v: unknown) => {
       const s = v === null || v === undefined ? '' : String(v);
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;

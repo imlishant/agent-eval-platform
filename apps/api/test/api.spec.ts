@@ -58,6 +58,12 @@ test('mock-fail vs mock-solve: B is better on every task, results persisted and 
   expect(t.grades.length).toBeGreaterThan(0);
   expect(t.isolation).toBeTruthy();
 
+  // API and runner compute the code version the same way: nothing changed mid-run, so no mismatch
+  expect(c.code_mismatch).toBe(0);
+  const db: any = (svc as any).db.db;
+  db.prepare(`UPDATE trials SET code_version = 'other' WHERE id = ?`).run(trials[0].id);
+  expect(svc.compare(exp.id).code_mismatch).toBe(1);
+
   const csv = svc.exportCsv(exp.id).trim().split('\n');
   expect(csv).toHaveLength(1 + 20);
   expect(csv[0]).toContain('task_id,config_name');
