@@ -76,7 +76,11 @@ export class ExperimentsService {
       .prepare(`SELECT e.*, ca.name AS config_a_name, cb.name AS config_b_name FROM experiments e
                 JOIN configs ca ON ca.id = e.config_a JOIN configs cb ON cb.id = e.config_b ORDER BY e.id DESC`)
       .all()
-      .map((e: any) => ({ ...e, task_ids: JSON.parse(e.task_ids), task_hashes: JSON.parse(e.task_hashes), progress: this.progress(e.id) }));
+      .map((e: any) => {
+        const progress = this.progress(e.id);
+        return { ...e, status: this.refreshStatus(e.id, e.status, progress), task_ids: JSON.parse(e.task_ids),
+          task_hashes: JSON.parse(e.task_hashes), progress };
+      });
   }
 
   get(id: number) {
@@ -86,10 +90,7 @@ export class ExperimentsService {
       .get(id);
     if (!e) throw new NotFoundException(`experiment ${id} not found`);
     const progress = this.progress(id);
-    if (e.status === 'running' && progress.pending + progress.running === 0) {
-      this.db.db.prepare(`UPDATE experiments SET status = 'done' WHERE id = ?`).run(id);
-      e.status = 'done';
-    }
+    e.status = this.refreshStatus(id, e.status, progress);
     return {
       ...e,
       task_ids: JSON.parse(e.task_ids),
@@ -98,6 +99,15 @@ export class ExperimentsService {
       config_b_json: JSON.parse(e.config_b_json),
       progress,
     };
+  }
+
+  /** An experiment is done when no trial is pending or running; every reader sees the same status. */
+  private refreshStatus(id: number, status: string, p: { pending: number; running: number }): string {
+    if (status === 'running' && p.pending + p.running === 0) {
+      this.db.db.prepare(`UPDATE experiments SET status = 'done' WHERE id = ?`).run(id);
+      return 'done';
+    }
+    return status;
   }
 
   progress(id: number) {
