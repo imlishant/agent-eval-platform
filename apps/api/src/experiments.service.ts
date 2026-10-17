@@ -1,13 +1,13 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { DbService } from './db.service';
-import { RunnerService } from './runner.service';
+import { CatalogConfig, ConfigDraft, RunnerService } from './runner.service';
 import { compare, TrialRow } from './stats';
 
 export interface CreateExperiment {
   name: string;
   hypothesis?: string;
-  config_a: string; // config file name (configs/<file>) or config id
-  config_b: string;
+  config_a: string | ConfigDraft; // saved config (file name or id), or a draft built in the UI
+  config_b: string | ConfigDraft;
   task_ids?: string[]; // default: all tasks
   n_trials?: number;
 }
@@ -25,11 +25,21 @@ export class ExperimentsService {
   constructor(private readonly db: DbService, private readonly runner: RunnerService) {}
 
   async create(body: CreateExperiment) {
+    const resolve = async (ref: string | ConfigDraft): Promise<CatalogConfig | undefined> => {
+      if (typeof ref === 'object' && ref) {
+        try {
+          return await this.runner.resolveDraft(ref);
+        } catch (e: any) {
+          throw new BadRequestException(e.message);
+        }
+      }
+      const configs = (await this.runner.catalog()).configs;
+      return configs.find((c) => c.file === ref || c.id === ref || c.name === ref);
+    };
+    const a = await resolve(body.config_a);
+    const b = await resolve(body.config_b);
+    if (!a || !b) throw new BadRequestException('config_a and config_b must name a saved config, or be {harness, model, settings}');
     const cat = await this.runner.catalog();
-    const find = (ref: string) => cat.configs.find((c) => c.file === ref || c.id === ref || c.name === ref);
-    const a = find(body.config_a);
-    const b = find(body.config_b);
-    if (!a || !b) throw new BadRequestException('config_a and config_b must name a file in configs/ (or a config id)');
     if (a.id === b.id) throw new BadRequestException('config A and B are identical (same content hash)');
     const taskIds = body.task_ids?.length ? body.task_ids : cat.tasks.map((t) => t.id);
     const unknown = taskIds.filter((id) => !cat.tasks.some((t) => t.id === id));

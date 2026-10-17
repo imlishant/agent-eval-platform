@@ -32,6 +32,22 @@ export class ApiController {
     }
   }
 
+  /** Add an OpenAI-compatible model to the registry (configs/models.json). */
+  @Post('models')
+  addModel(@Body() body: any) {
+    try {
+      return this.runner.addModel(body);
+    } catch (e: any) {
+      throw new BadRequestException(e.message);
+    }
+  }
+
+  /** Test a model (saved or not): one real request with a tool. */
+  @Post('models/check')
+  checkModel(@Body() body: any) {
+    return this.runner.checkModel(body);
+  }
+
   @Post('experiments')
   create(@Body() body: CreateExperiment) {
     return this.experiments.create(body);

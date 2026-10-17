@@ -118,6 +118,30 @@ test('a config defined through the API is saved, validated and gets a content-ha
   }
 });
 
+test('experiments can be built from drafts (harness x model x settings); same content reuses the saved config', async () => {
+  const exp = await svc.create({
+    name: 'drafts', config_a: { harness: 'mock', model: 'none', settings: { extra: { behavior: 'fail' } } },
+    config_b: { harness: 'mock', model: 'none', settings: { extra: { behavior: 'solve' } } },
+    task_ids: ['count-csv-rows'], n_trials: 1,
+  });
+  expect(exp.config_a).toBe('864ccf856779'); // identical content to configs/mock-fail.json -> same ID, no new file
+  expect(exp.config_b).toBe('9e52e991ae9f'); // = mock-solve.json
+  await expect(svc.create({ name: 'x', config_a: { harness: 'nope', model: 'none' }, config_b: 'mock-solve.json' }))
+    .rejects.toThrow(/unknown harness/);
+  await expect(svc.create({ name: 'x', config_a: { harness: 'mock', model: 'nope' }, config_b: 'mock-solve.json' }))
+    .rejects.toThrow(/unknown model/);
+  await waitDone(exp.id);
+});
+
+test('model registry rejects bad entries and never accepts a key value', async () => {
+  const { RunnerService } = await import('../src/runner.service');
+  const runner = app.get(RunnerService);
+  expect(() => runner.addModel({ name: 'Bad Name' })).toThrow(/lowercase/);
+  expect(() => runner.addModel({ name: 'ok-name', id: 'm', base_url: 'not a url' })).toThrow(/full URL/);
+  expect(() => runner.addModel({ name: 'ok-name', id: 'm', base_url: 'https://x.ai/v1', api_key_env: 'sk-abc123secret' }))
+    .toThrow(/NAME of an env var/);
+});
+
 test('the runs list reports a finished experiment as done without opening it first', async () => {
   const exp = await svc.create({ name: 'status', config_a: 'mock-fail.json', config_b: 'mock-solve.json',
     task_ids: ['count-csv-rows'], n_trials: 1 });

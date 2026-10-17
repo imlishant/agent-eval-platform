@@ -7,7 +7,7 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 tasks under two configurations, several times each, grades every run, and compares the two with confidence
 intervals, so a real improvement can be told apart from noise.
 
-> **Version 0.8.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
+> **Version 0.9.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
 
 ## Progress
 
@@ -23,7 +23,7 @@ intervals, so a real improvement can be told apart from noise.
 | 20 tasks (code, exact, skill, memory, judge) | ✅ done | `tasks/` |
 | Judge validation (agreement with human labels, Cohen's kappa) | 🟡 provisional | labels await human review |
 | API (NestJS + SQLite): experiments, worker pool, retries, stats, export | ✅ done | `apps/api`, DECISIONS D16 |
-| UI (Vue 3): Run, Compare, Trial pages; define configs | ✅ done | `apps/web` |
+| UI (Vue 3): Runs, New experiment (A/B builders), Compare, Trial, Models & harnesses | ✅ done | `apps/web`, DECISIONS D20 |
 | Failure analysis (stretch): categories from the trace | ✅ done | `runner/evalrunner/failures.py`, DECISIONS D18 |
 | Experiment + report | 🔜 next | `docs/EXPERIMENT.md` |
 | Docker (`docker compose up`) | ⬜ todo | |
@@ -135,7 +135,8 @@ Use `configs/mock-solve.json` to run without any model or key.
 
 ## Add a harness
 
-A harness is one Python class plus one registry line; nothing else in the platform changes.
+A harness is one Python class plus one registry line; nothing else in the platform changes. (It cannot be added from
+the UI: it is code. The Models & harnesses page lists the registered ones and these steps.)
 
 1. Create `runner/evalrunner/harnesses/<name>.py`:
    ```python
@@ -154,6 +155,12 @@ A harness is one Python class plus one registry line; nothing else in the platfo
 3. Use it from a config: `"harness": "my-harness"`.
 
 ## Add a model
+
+**From the UI:** Models & harnesses → Add a model: display name, model id, base URL, and the *name* of the key
+variable in `.env`. "Test connection" makes one real request with a tool, so you know it works and supports tool
+calling before you use it. It is saved to `configs/models.json` and appears in the experiment builder.
+
+**By hand:** add the same fields to `configs/models.json`.
 
 **Any OpenAI-compatible endpoint** (Ollama, Groq, Gemini, OpenRouter, OpenAI, vLLM, …) needs only a config file:
 

@@ -2,7 +2,24 @@
 
 export interface ConfigEntry { file: string; name: string; id: string; config: any }
 export interface TaskEntry { id: string; category: string; hash: string; sessions: number; graders: string[] }
-export interface Catalog { configs: ConfigEntry[]; tasks: TaskEntry[]; skills: { name: string; description: string }[] }
+export interface ModelEntry { name: string; label: string; provider: string; id: string; base_url: string | null; api_key_env: string | null; notes?: string }
+export interface HarnessEntry { id: string; description: string; settings: string[]; requirements: string }
+export interface Catalog {
+  configs: ConfigEntry[]; tasks: TaskEntry[]; skills: { name: string; description: string }[];
+  harnesses: HarnessEntry[]; models: ModelEntry[];
+}
+/** One side of an experiment as built in the UI: harness x model x settings. */
+export interface Draft {
+  harness: string; model: string;
+  settings: { memory: string; skills: string[]; temperature: number; max_steps: number; max_tokens: number; timeout_s: number;
+    extra: { behavior: string } };
+}
+export const newDraft = (harness: string, model: string): Draft => ({
+  harness, model,
+  settings: { memory: 'off', skills: [], temperature: 0.7, max_steps: 15, max_tokens: 2000,
+    timeout_s: 300, extra: { behavior: 'solve' } }, // same budget for every harness: one axis at a time
+});
+export interface ModelCheck { ok: boolean; latency_ms: number; tool_calling: boolean; message: string }
 export interface Progress { total: number; pending: number; running: number; done: number; invalid: number }
 
 export interface TaskDelta { task_id: string; n_pairs: number; mean_a: number; mean_b: number; delta: number; sd_a: number; sd_b: number }
@@ -50,6 +67,8 @@ export const api = {
   trial: (id: number) => call<Trial>(`/trials/${id}`),
   createExperiment: (body: any) => call<any>('/experiments', { method: 'POST', body: JSON.stringify(body) }),
   createConfig: (body: any) => call<ConfigEntry>('/configs', { method: 'POST', body: JSON.stringify(body) }),
+  addModel: (body: any) => call<ModelEntry>('/models', { method: 'POST', body: JSON.stringify(body) }),
+  checkModel: (body: any) => call<ModelCheck>('/models/check', { method: 'POST', body: JSON.stringify(body) }),
   retryInvalid: (id: number) => call<{ requeued: number }>(`/experiments/${id}/retry-invalid`, { method: 'POST' }),
 };
 

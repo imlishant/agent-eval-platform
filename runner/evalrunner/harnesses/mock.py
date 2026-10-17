@@ -16,6 +16,8 @@ from .base import HarnessAdapter
 class MockHarness(HarnessAdapter):
     id = "mock"
     version = "1"
+    description = "Scripted fake agent, no model, no cost: for testing the pipeline. settings.extra.behavior = solve | fail."
+    settings = ()
 
     def run_trial(self, ctx: TrialContext) -> Trace:
         trace = Trace()

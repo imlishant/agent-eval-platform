@@ -6,6 +6,11 @@ Each entry names the branch it came from; all branches are kept on GitHub.
 ## [Unreleased]
 - The experiment of record and its report.
 
+## [0.9.0] - 2026-10-18 · Simpler UI (`feat/ui-config-builder`)
+- New experiment page: A and B each built from harness × model × memory × skills; "What changes" shows the axes.
+- Models & harnesses page: add an OpenAI-compatible model and test it from the UI; harness list with how to add one.
+- Home is the runs list. `fix/19-stale-experiment-status`: finished experiments no longer listed as running.
+
 ## [0.8.0] - 2026-10-18 · Failure analysis (`feat/failure-analysis`)
 - Failed trials get a category from their trace (timeout, step_exhaustion, loop, bad_tool_args, wrong_tool,
   grader_disagreement, gave_up_early, wrong_answer); counts per config on Compare, category + signals on Trial.
