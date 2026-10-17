@@ -70,6 +70,7 @@ export class DbService implements OnModuleDestroy {
     const cols = (this.db.prepare(`PRAGMA table_info(trials)`).all() as { name: string }[]).map((c) => c.name);
     if (!cols.includes('failure_category')) this.db.exec(`ALTER TABLE trials ADD COLUMN failure_category TEXT`);
     if (!cols.includes('failure_signals')) this.db.exec(`ALTER TABLE trials ADD COLUMN failure_signals TEXT`);
+    if (!cols.includes('code_version')) this.db.exec(`ALTER TABLE trials ADD COLUMN code_version TEXT`);
     // A restart while trials were running: put them back in the queue (results are saved atomically,
     // so a running trial has written nothing yet).
     this.db.prepare(`UPDATE trials SET status = 'pending' WHERE status = 'running'`).run();

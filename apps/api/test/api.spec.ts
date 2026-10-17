@@ -63,6 +63,11 @@ test('mock-fail vs mock-solve: B is better on every task, results persisted and 
   expect(failA.reduce((s: number, f: any) => s + f.n, 0)).toBe(10);
   expect(failA.map((f: any) => f.category)).toEqual(['gave_up_early']);
   expect(c.failures.some((f: any) => f.config_id === c.experiment.config_b.id)).toBe(false);
+  // API and runner compute the code version the same way: nothing changed mid-run, so no mismatch
+  expect(c.code_mismatch).toBe(0);
+  const db: any = (svc as any).db.db;
+  db.prepare(`UPDATE trials SET code_version = 'other' WHERE id = ?`).run(trials[0].id);
+  expect(svc.compare(exp.id).code_mismatch).toBe(1);
 
   const csv = svc.exportCsv(exp.id).trim().split('\n');
   expect(csv).toHaveLength(1 + 20);

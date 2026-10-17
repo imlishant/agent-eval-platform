@@ -21,6 +21,7 @@ export interface CompareResponse {
     input_tokens: number | null; output_tokens: number | null; cost_usd: number | null; ref_cost_usd: number | null;
     mean_latency_ms: number | null }[];
   failures: { config: string; config_id: string; category: string; n: number }[];
+  code_mismatch: number;
 }
 export interface TrialRow {
   id: number; task_id: string; config_id: string; config_name: string; trial_index: number; status: string;

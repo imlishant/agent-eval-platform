@@ -15,6 +15,12 @@
         <p v-if="c.experiment.hypothesis" class="hypothesis">Hypothesis: {{ c.experiment.hypothesis }}</p>
       </div>
 
+      <p v-if="c.code_mismatch" class="card warn">
+        <b>{{ c.code_mismatch }} trial(s) ran on different code</b> than this experiment was started with
+        (<code>{{ c.experiment.code_sha }}</code>): the code changed while it was running, so these results may not be
+        comparable. Run experiments of record from a dedicated git worktree that nobody edits.
+      </p>
+
       <!-- progress -->
       <section class="card" v-if="!c.complete || c.progress.invalid">
         <div class="row">
@@ -213,6 +219,7 @@ onUnmounted(() => clearInterval(timer));
 </script>
 
 <style scoped>
+.warn { border-left: 4px solid var(--bad); }
 .hypothesis { font-style: italic; margin: 6px 0 0; }
 .verdict { border-left: 4px solid var(--line); }
 .verdict.good { border-left-color: var(--good); }
