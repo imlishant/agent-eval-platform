@@ -87,3 +87,12 @@ def test_memory_carries_across_sessions_only_when_on():
 def test_provider_error_propagates_for_invalid_marking():
     with pytest.raises(ProviderError):
         run([ProviderError("429 after 4 attempts")])
+
+
+def test_provider_rejected_tool_call_is_an_agent_error_not_infra():
+    from evalrunner.models import ModelOutputError
+    trace, model = run([ModelOutputError("Failed to parse tool call arguments as JSON"), ("37", [])])
+    err = next(e for e in trace.events if e.type == "error")
+    assert err.payload["kind"] == "bad_tool_args"
+    assert trace.final_answer() == "37"                       # the agent got another step
+    assert "rejected" in model.seen[1]["messages"][-1]["content"]

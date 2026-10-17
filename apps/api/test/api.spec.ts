@@ -40,15 +40,15 @@ async function waitDone(id: number) {
 test('mock-fail vs mock-solve: B is better on every task, results persisted and exportable', async () => {
   const exp = await svc.create({
     name: 'pipeline test', hypothesis: 'solve beats fail', config_a: 'mock-fail.json', config_b: 'mock-solve.json',
-    task_ids: ['count-csv-rows', 'write-json-config', 'fix-pagination'], n_trials: 2,
+    task_ids: ['count-csv-rows', 'write-json-config', 'fix-pagination', 'sum-amounts', 'fix-failing-test'], n_trials: 2,
   });
-  expect(exp.progress.total).toBe(3 * 2 * 2);
+  expect(exp.progress.total).toBe(5 * 2 * 2);
   await waitDone(exp.id);
 
   const c = svc.compare(exp.id);
   expect(c.complete).toBe(true);
   expect(c.metrics.score.mean_delta).toBeCloseTo(1);
-  expect(c.metrics.score.tasks_better).toBe(3);
+  expect(c.metrics.score.tasks_better).toBe(5);
   expect(c.metrics.score.verdict).toBe('B better');
   expect(c.metrics.cost_usd.mean_delta).toBe(0); // mock: no tokens
 
@@ -59,7 +59,7 @@ test('mock-fail vs mock-solve: B is better on every task, results persisted and 
   expect(t.isolation).toBeTruthy();
 
   const csv = svc.exportCsv(exp.id).trim().split('\n');
-  expect(csv).toHaveLength(1 + 12);
+  expect(csv).toHaveLength(1 + 20);
   expect(csv[0]).toContain('task_id,config_name');
 });
 
@@ -85,4 +85,24 @@ test('an infrastructure failure is retried, then marked invalid, never scored', 
 test('rejects identical configs and unknown tasks', async () => {
   await expect(svc.create({ name: 'x', config_a: 'mock-solve.json', config_b: 'mock-solve.json' })).rejects.toThrow(/identical/);
   await expect(svc.create({ name: 'x', config_a: 'mock-fail.json', config_b: 'mock-solve.json', task_ids: ['nope'] })).rejects.toThrow(/unknown tasks/);
+});
+
+test('a config defined through the API is saved, validated and gets a content-hash ID', async () => {
+  const { RunnerService } = await import('../src/runner.service');
+  const runner = app.get(RunnerService);
+  const { rmSync } = await import('fs');
+  const { REPO } = await import('../src/paths');
+  const name = `test-cfg-${Date.now()}`;
+  try {
+    const c = await runner.createConfig({ name, harness: 'mock', model: { provider: 'none', id: 'none' },
+      settings: { extra: { behavior: 'solve' } } });
+    expect(c.file).toBe(`${name}.json`);
+    expect(c.id).toBe('9e52e991ae9f'); // same content as mock-solve.json => same ID (name is not part of it)
+    await expect(runner.createConfig({ name, harness: 'mock', model: {} })).rejects.toThrow(/already exists/);
+    await expect(runner.createConfig({ name: `${name}-bad`, harness: 'mock', model: { nope: 1 } })).rejects.toThrow(/invalid config/);
+    await expect(runner.createConfig({ name: 'Bad Name!' })).rejects.toThrow(/lowercase/);
+  } finally {
+    rmSync(join(REPO, 'configs', `${name}.json`), { force: true });
+    rmSync(join(REPO, 'configs', `${name}-bad.json`), { force: true });
+  }
 });

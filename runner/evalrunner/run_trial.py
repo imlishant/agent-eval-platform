@@ -42,6 +42,8 @@ def run(spec: dict) -> dict:
                     "trace": []}
 
     score = sum(g.score for g in grades) / len(grades) if grades else 0.0
+    wall_ms = int((time.time() - started) * 1000)
+    waited_ms = sum(e.payload.get("waited_ms", 0) for e in trace.events if e.type == "model_call")
     return {
         **meta,
         "status": "done",
@@ -49,7 +51,9 @@ def run(spec: dict) -> dict:
         "passed": all(g.passed for g in grades),
         "grades": [g.__dict__ for g in grades],
         "usage": trace.usage(),
-        "latency_ms": int((time.time() - started) * 1000),
+        "latency_ms": wall_ms - waited_ms,  # the agent's time; rate-limit waits are our quota, not its speed
+        "wall_ms": wall_ms,
+        "rate_limit_wait_ms": waited_ms,
         "trace": trace.to_list(),
     }
 

@@ -7,7 +7,7 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 tasks under two configurations, several times each, grades every run, and compares the two with confidence
 intervals, so a real improvement can be told apart from noise.
 
-> **Version 0.6.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
+> **Version 0.7.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
 
 ## Progress
 
@@ -23,8 +23,8 @@ intervals, so a real improvement can be told apart from noise.
 | 20 tasks (code, exact, skill, memory, judge) | ✅ done | `tasks/` |
 | Judge validation (agreement with human labels, Cohen's kappa) | 🟡 provisional | labels await human review |
 | API (NestJS + SQLite): experiments, worker pool, retries, stats, export | ✅ done | `apps/api`, DECISIONS D16 |
-| UI (Vue 3): Run, Compare, Trial pages | 🔜 next | |
-| Failure analysis (stretch) | ⬜ todo | |
+| UI (Vue 3): Run, Compare, Trial pages; define configs | ✅ done | `apps/web` |
+| Failure analysis (stretch) | 🔜 next | |
 | Experiment + report | ⬜ todo | `docs/EXPERIMENT.md` |
 | Docker (`docker compose up`) | ⬜ todo | |
 | Design doc, known limits | ⬜ todo | `docs/DESIGN.md`, `docs/LIMITS.md` |
@@ -87,6 +87,9 @@ cd apps/api && npm install && npm run start:dev      # http://localhost:3000/api
 | `GET /api/trials/:id` | one trial: full trace, grades with reasoning |
 | `POST /api/experiments/:id/retry-invalid` | re-queue trials that failed for infrastructure reasons |
 | `GET /api/experiments/:id/export.json` / `export.csv` | export results |
+
+UI: build it once and the API serves it on the same port: `cd apps/web && npm install && npm run build`, then open
+http://localhost:3000. For UI development with hot reload: `npm run dev` (http://localhost:5173, proxies `/api`).
 
 Tests: `cd apps/api && npm test` (statistics + an end-to-end experiment through the real runner with the free mock harness).
 
@@ -172,7 +175,7 @@ skills/        skill documents the agent can load when a config enables them
 judge_validation/  human-labelled judge outputs + validate_judge.py (accuracy, Cohen's kappa)
 docs/          DECISIONS.md (why), DESIGN.md, LIMITS.md, EXPERIMENT.md
 apps/api       NestJS API: experiments, scheduler, statistics, export (SQLite in data/)
-apps/web       Vue UI (coming)
+apps/web       Vue 3 UI: Run (define configs, start experiments), Compare, Trial
 ```
 
 ## Documentation

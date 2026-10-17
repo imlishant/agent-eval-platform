@@ -8,6 +8,8 @@
  *    take the 2.5th and 97.5th percentiles. Tasks are the unit because task-to-task variation is the main
  *    source of uncertainty, and the same tasks are used for A and B (that is the pairing).
  * 5. If the CI contains 0 the verdict is "no detectable difference (could be noise)".
+ * 5b. Below MIN_TASKS finished tasks there is no verdict at all: a bootstrap over 2-4 tasks can only take a
+ *    handful of values, so its "CI" is not a confidence interval.
  * 6. Invalid trials (infrastructure failures) are dropped together with the same trial index of the other
  *    config, so both sides of each task are averaged over the same number of trials.
  */
@@ -36,7 +38,7 @@ export interface Comparison {
   mean_delta: number;
   ci_low: number;
   ci_high: number;
-  verdict: 'B better' | 'B worse' | 'no detectable difference';
+  verdict: 'B better' | 'B worse' | 'no detectable difference' | 'too few tasks';
   message: string;
   mde: number; // minimum detectable effect at 80% power, alpha 0.05
   tasks_better: number;
@@ -47,6 +49,8 @@ export interface Comparison {
   dropped_pairs: number; // trial pairs dropped because one side was invalid
   tasks: TaskDelta[];
 }
+
+export const MIN_TASKS = 5;
 
 /** Small seeded PRNG so the same data always gives the same CI (reproducibility). */
 export function mulberry32(seed: number): () => number {
@@ -128,10 +132,13 @@ export function compare(a: TrialRow[], b: TrialRow[], opts: { iterations?: numbe
   const mde = (2.8 / 1.96) * halfWidth;
 
   let verdict: Comparison['verdict'] = 'no detectable difference';
-  if (tasks.length > 1 && lo > 0) verdict = 'B better';
-  if (tasks.length > 1 && hi < 0) verdict = 'B worse';
+  if (lo > 0) verdict = 'B better';
+  if (hi < 0) verdict = 'B worse';
+  if (tasks.length < MIN_TASKS) verdict = 'too few tasks';
   const message =
-    verdict === 'no detectable difference'
+    verdict === 'too few tasks'
+      ? `Too few tasks to judge: ${tasks.length} finished, at least ${MIN_TASKS} are needed for a meaningful interval.`
+      : verdict === 'no detectable difference'
       ? `No detectable difference (could be noise): the 95% CI [${lo.toFixed(3)}, ${hi.toFixed(3)}] includes 0. ` +
         `With ${tasks.length} tasks, only effects larger than about ${mde.toFixed(3)} would be reliably detected.`
       : `${verdict === 'B better' ? 'B is better' : 'B is worse'} by ${Math.abs(md).toFixed(3)} on average; ` +

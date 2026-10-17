@@ -132,8 +132,9 @@ export class ExperimentsService {
       .prepare(`SELECT c.name AS config, t.config_id, COUNT(*) AS trials, SUM(t.status = 'invalid') AS invalid,
                 AVG(t.score) AS mean_score, SUM(t.input_tokens) AS input_tokens, SUM(t.output_tokens) AS output_tokens,
                 SUM(t.cost_usd) AS cost_usd, SUM(t.ref_cost_usd) AS ref_cost_usd, AVG(t.latency_ms) AS mean_latency_ms
-                FROM trials t JOIN configs c ON c.id = t.config_id WHERE t.experiment_id = ? GROUP BY t.config_id`)
-      .all(id);
+                FROM trials t JOIN configs c ON c.id = t.config_id WHERE t.experiment_id = ? GROUP BY t.config_id
+                ORDER BY t.config_id = (SELECT config_b FROM experiments WHERE id = ?)`)
+      .all(id, id);
   }
 
   /** Give finally-invalid trials another round (e.g. the next day, after a daily quota reset). */

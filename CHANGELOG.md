@@ -4,7 +4,15 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- Vue UI: Run, Compare, Trial pages.
+- Failure analysis (rule-based categories from the trace).
+
+## [0.7.0] - 2026-10-18 · UI (`feat/web-ui`)
+- Vue 3 UI: Run (define a config, start an experiment, shows which axes differ), Compare (verdict, CI chart,
+  quality next to tokens/latency/cost, per-task deltas, clickable trials, export), Trial (grader reasoning, full
+  trajectory by session). Light and dark.
+- `POST /api/configs`: configs defined in the UI are saved as files and validated by the runner.
+- Fixed (DECISIONS D17): bad tool calls rejected by the provider are agent errors, not infra; no verdict below
+  5 tasks; latency excludes rate-limit waits.
 
 ## [0.6.0] - 2026-10-18 · API, scheduler, statistics, export (`feat/api-stats`)
 - NestJS API over SQLite: experiments, trials, events, grades, config snapshots.

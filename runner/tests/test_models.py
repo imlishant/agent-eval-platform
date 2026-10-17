@@ -52,6 +52,7 @@ def test_retries_rate_limit_then_succeeds_and_counts_attempts():
     r = a.chat([], [], temperature=0, max_tokens=10)
     assert r.text == "hi" and r.attempts == 3 and fake.calls == 3
     assert all(2 <= w <= 3 for w in waits)                 # honoured retry-after: 2
+    assert r.waited_ms == int(sum(waits) * 1000)           # waiting is reported, so latency can exclude it
     assert "reasoning" not in r.assistant_message          # provider-only field dropped
 
 
@@ -65,5 +66,16 @@ def test_gives_up_after_max_attempts():
 def test_does_not_retry_bad_request():
     a, fake, _ = adapter([bad_request()])
     with pytest.raises(ProviderError):
+        a.chat([], [], temperature=0, max_tokens=10)
+    assert fake.calls == 1
+
+
+def test_bad_tool_call_from_model_is_not_retried_and_not_infra():
+    from evalrunner.models import ModelOutputError
+    req = httpx.Request("POST", "http://x")
+    err = openai.BadRequestError("Failed to parse tool call arguments as JSON",
+                                 response=httpx.Response(400, request=req), body=None)
+    a, fake, _ = adapter([err])
+    with pytest.raises(ModelOutputError):
         a.chat([], [], temperature=0, max_tokens=10)
     assert fake.calls == 1
