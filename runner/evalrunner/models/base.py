@@ -13,6 +13,15 @@ class ProviderError(Exception):
     """
 
 
+class ModelOutputError(Exception):
+    """The provider rejected what the MODEL produced (e.g. a tool call with invalid JSON arguments).
+
+    This is an agent mistake, not an infra failure: the harness records it as `bad_tool_args`,
+    tells the model, and the step counts. Retrying the trial instead would hide the mistake and
+    inflate the score of the model that makes it.
+    """
+
+
 @dataclass
 class ToolCall:
     id: str

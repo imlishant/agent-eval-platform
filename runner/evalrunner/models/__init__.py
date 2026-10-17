@@ -2,7 +2,7 @@
 A new model on an existing protocol = only a config file."""
 
 from ..schema import ModelSpec
-from .base import ModelAdapter, ModelResponse, ProviderError, ToolCall
+from .base import ModelAdapter, ModelOutputError, ModelResponse, ProviderError, ToolCall
 from .openai_compat import OpenAICompatAdapter
 
 MODEL_ADAPTERS: dict[str, type[ModelAdapter]] = {
@@ -16,4 +16,4 @@ def get_model(spec: ModelSpec) -> ModelAdapter:
     return MODEL_ADAPTERS[spec.provider](spec)
 
 
-__all__ = ["ModelAdapter", "ModelResponse", "ProviderError", "ToolCall", "get_model"]
+__all__ = ["ModelAdapter", "ModelOutputError", "ModelResponse", "ProviderError", "ToolCall", "get_model"]

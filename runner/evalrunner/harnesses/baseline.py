@@ -15,7 +15,7 @@ from __future__ import annotations
 import time
 from pathlib import Path
 
-from ..models import get_model
+from ..models import ModelOutputError, get_model
 from ..schema import Trace, TrialContext
 from . import tools as T
 from .base import HarnessAdapter
@@ -75,8 +75,15 @@ class BaselineHarness(HarnessAdapter):
                 if time.time() > deadline:
                     trace.add("error", kind="timeout", message=f"trial exceeded {s.timeout_s}s")
                     break
-                resp = model.chat(messages, tool_schemas, temperature=s.temperature,
-                                  max_tokens=s.max_tokens)  # ProviderError propagates: infra failure
+                try:
+                    resp = model.chat(messages, tool_schemas, temperature=s.temperature,
+                                      max_tokens=s.max_tokens)  # ProviderError propagates: infra failure
+                except ModelOutputError as e:
+                    # the model produced an invalid tool call that the provider refused: the agent's mistake
+                    trace.add("error", kind="bad_tool_args", message=str(e))
+                    messages.append({"role": "user", "content": "Your last tool call was rejected because its "
+                                     "arguments were not valid JSON for the tool's schema. Try again."})
+                    continue
                 trace.add("model_call", step=step, input_tokens=resp.input_tokens,
                           output_tokens=resp.output_tokens, latency_ms=resp.latency_ms,
                           attempts=resp.attempts)

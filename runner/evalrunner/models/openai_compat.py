@@ -8,13 +8,16 @@ from __future__ import annotations
 import json
 import os
 import random
+import re
 import time
 
 import openai
 
 from ..schema import ModelSpec
-from .base import ModelAdapter, ModelResponse, ProviderError, ToolCall
+from .base import ModelAdapter, ModelOutputError, ModelResponse, ProviderError, ToolCall
 
+# provider messages meaning "the model generated an invalid tool call" (seen on Groq; similar on others)
+BAD_GENERATION = re.compile(r"tool call|tool_use_failed|failed_generation|function call|arguments as JSON", re.I)
 RETRYABLE = (openai.RateLimitError, openai.APIConnectionError,
              openai.APITimeoutError, openai.InternalServerError)
 MAX_ATTEMPTS = 4
@@ -46,7 +49,11 @@ class OpenAICompatAdapter(ModelAdapter):
                 if attempt == MAX_ATTEMPTS:
                     raise ProviderError(f"{type(e).__name__} after {attempt} attempts: {e}") from e
                 self.sleep(_wait_seconds(e, attempt))
-            except openai.APIStatusError as e:  # 4xx other than 429: retrying will not help
+            except openai.BadRequestError as e:
+                if BAD_GENERATION.search(str(e.message)):
+                    raise ModelOutputError(str(e.message)[:500]) from e  # the agent's mistake
+                raise ProviderError(f"HTTP {e.status_code}: {e.message}") from e
+            except openai.APIStatusError as e:  # other 4xx: retrying will not help
                 raise ProviderError(f"HTTP {e.status_code}: {e.message}") from e
 
         msg = r.choices[0].message
