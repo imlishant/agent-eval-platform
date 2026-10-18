@@ -1,121 +1,152 @@
 # Agent Evals Platform
 
-Evaluate any AI agent harness (X) running any model (Y) and answer one question with evidence:
+Evaluate any AI agent harness (X) running any model (Y), and answer one question with evidence:
 **when we change the harness or the model, did the agent get better, worse, or stay the same, and how sure are we?**
 
-An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. The platform runs a fixed set of
-tasks under two configurations, several times each, grades every run, and compares the two with confidence
-intervals, so a real improvement can be told apart from noise.
+An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. The platform runs the same tasks under two
+configurations, several times each, grades every run, and compares the two with confidence intervals, so a real
+improvement can be told apart from noise. Every number links back to the trace of what the agent did.
 
-> **Version 0.9.0 (in development).** See [Progress](#progress) for what works today and [CHANGELOG.md](CHANGELOG.md) for history.
+> **Version 0.10.0.** History in [CHANGELOG.md](CHANGELOG.md). Design: [docs/DESIGN.md](docs/DESIGN.md) ·
+> Known limits: [docs/LIMITS.md](docs/LIMITS.md) · Experiment: [docs/EXPERIMENT.md](docs/EXPERIMENT.md) ·
+> Decisions: [docs/DECISIONS.md](docs/DECISIONS.md)
 
-## Progress
+## Contents
+[What is in the box](#what-is-in-the-box) · [Setup](#setup) · [Run an experiment from the UI](#run-an-experiment-from-the-ui) ·
+[Read the results](#read-the-results) · [Add a model](#add-a-model) · [Add a harness](#add-a-harness) · [Add a task](#add-a-task) ·
+[API](#api) · [Tests](#tests) · [Status](#status) · [Repository layout](#repository-layout)
 
-| Area | Status | Notes |
-|---|---|---|
-| Plan, decisions, provider spikes | ✅ done | [PLAN.md](PLAN.md), [docs/DECISIONS.md](docs/DECISIONS.md) |
-| Trial runner: trace, retries, invalid-trial handling | ✅ done | `runner/evalrunner/run_trial.py` |
-| Isolation: OS sandbox for agent processes, secret scrubbing | ✅ done (macOS) | `runner/evalrunner/isolation.py`, DECISIONS D14 |
-| Harnesses: `mock`, `baseline` | ✅ done | `runner/evalrunner/harnesses/` |
-| Harness: `hermes` (Hermes Agent, required) | ✅ done | `harnesses/hermes.py`, DECISIONS D9, D15 |
-| Model adapter: any OpenAI-compatible endpoint (Ollama, Groq, Gemini, …) | ✅ done | `runner/evalrunner/models/` |
-| Graders: exact_match, file_check, unit_tests, llm_judge | ✅ done | each deterministic grader self-tested |
-| 20 tasks (code, exact, skill, memory, judge) | ✅ done | `tasks/` |
-| Judge validation (agreement with human labels, Cohen's kappa) | 🟡 provisional | labels await human review |
-| API (NestJS + SQLite): experiments, worker pool, retries, stats, export | ✅ done | `apps/api`, DECISIONS D16 |
-| UI (Vue 3): Runs, New experiment (A/B builders), Compare, Trial, Models & harnesses | ✅ done | `apps/web`, DECISIONS D20 |
-| Failure analysis (stretch): categories from the trace | ✅ done | `runner/evalrunner/failures.py`, DECISIONS D18 |
-| Experiment + report | 🔜 next | `docs/EXPERIMENT.md` |
-| Docker (`docker compose up`) | ⬜ todo | |
-| Design doc, known limits | ⬜ todo | `docs/DESIGN.md`, `docs/LIMITS.md` |
+## What is in the box
 
-## How it works
-
-```
-Vue UI  →  NestJS API  →  SQLite
-                │
-                └── spawns: python -m evalrunner.run_trial <trial.json>
-                     1. fresh temp folder (sandbox) + private HOME, task files copied in
-                     2. harness runs the agent with the configured model → trace of every step
-                     3. graders score the result (0..1) and explain why
-                     4. prints one JSON object: {status, score, grades, usage, trace}
-```
-
-- **Config** = harness + model + settings (skills, memory, tools, temperature, step/token budgets, timeout), stored as a
-  JSON file in `configs/`. Its ID is a hash of its content, so the same settings always give the same ID; git keeps the history.
-- **Task** = a folder in `tasks/` with the prompt(s), starting files, how it is graded, and a reference solution.
-- **Trial** = one task × one config × one repetition. Agents are non-deterministic, so every task runs N times.
-- A provider failure (rate limit, server error) or a harness crash is retried; if it still fails the trial is marked
-  **invalid** and left out of the comparison instead of being counted as a wrong answer.
-- **Reproducibility:** every trial records the code version it ran on; Compare warns if it differs from the
-  experiment's (the code changed mid-run). Run experiments of record from a git worktree nobody edits.
-- **Isolation:** every agent process runs in an OS sandbox that can only touch its own trial folder. This is not
-  optional: in testing, an agent with a terminal searched the disk and copied a task's reference answer
-  ([DECISIONS D14](docs/DECISIONS.md)). API keys are scrubbed from every result.
+| | |
+|---|---|
+| **Harnesses** | `baseline` (our minimal tool-calling loop), `hermes` (Hermes Agent, Nous Research), `mock` (scripted, no model, for testing) |
+| **Models** | Any OpenAI-compatible endpoint. Pre-registered: Gemini 3.1 / 3.5 Flash Lite, gpt-oss-20b / 120b on Groq, qwen3:8b on local Ollama (all free) |
+| **Tasks** | 20, in 5 categories: code (8), exact answer (3), skill (3), memory (3, two sessions), judge (3) |
+| **Graders** | `exact_match`, `file_check`, `unit_tests` (deterministic) and `llm_judge` (rubric, validated against labels) |
+| **Statistics** | Per-task deltas, 95% bootstrap CI over tasks, "no detectable difference (could be noise)" verdict, minimum detectable effect; same for tokens, latency and cost |
+| **Inspection** | Full trajectory per trial: messages, tool calls and results, memory reads/writes, skills used, grader reasoning, failure category |
+| **Isolation** | Fresh folder and HOME per trial; every agent process in an OS sandbox (macOS); secrets and account IDs scrubbed |
 
 ## Setup
 
-Requirements: [uv](https://docs.astral.sh/uv/) (installs Python 3.13 for you). Optional: [Ollama](https://ollama.com) for a
-local model, [Hermes Agent](https://hermes-agent.nousresearch.com) for the `hermes` harness (its first trial prepares a
-shared base in `~/.cache/evalrunner/hermes-base`, ~350 MB, once). Native runs use the macOS sandbox; on other systems use Docker.
+**Requirements:** macOS (for the OS sandbox; see LIMITS for Linux), [uv](https://docs.astral.sh/uv/) (installs Python 3.13),
+Node.js 22+. Optional: [Ollama](https://ollama.com) for a local model; [Hermes Agent](https://hermes-agent.nousresearch.com)
+for the `hermes` harness (its first trial prepares a shared base in `~/.cache/evalrunner/hermes-base`, ~350 MB, once).
 
 ```bash
 git clone <this repo> && cd <repo>
-cp .env.example .env          # add the keys you have (all have free tiers; see below)
-cd runner && uv sync          # creates the Python environment
-uv run pytest                 # all tests should pass; no API key needed
+cp .env.example .env                                   # add the keys you have (all have free tiers)
+cd runner   && uv sync && uv run pytest && cd ..       # Python env + 79 tests (no key needed)
+cd apps/web && npm install && npm run build && cd ../..
+cd apps/api && npm install && npm run start:dev        # builds and starts the API + UI
 ```
 
-Keys (`.env`, never committed):
+Open **http://localhost:3000**. Results are stored in `data/evals.db` (SQLite).
+
+**Keys** go in `.env` (git-ignored). The platform only ever stores the variable *name*.
 
 | Variable | Used for | Free option |
 |---|---|---|
-| `GROQ_API_KEY` | fast hosted open-weight models for development | console.groq.com |
-| `GEMINI_API_KEY` | Gemini Flash Lite (experiments, Hermes) and Gemma (LLM judge) | aistudio.google.com |
-| none | local model via Ollama: `ollama pull qwen3:8b` | runs on your machine |
+| `GEMINI_API_KEY` | Gemini Flash Lite (works with Hermes) and Gemma (the LLM judge) | aistudio.google.com |
+| `GROQ_API_KEY` | gpt-oss-20b / 120b, fast, baseline harness only (8k tokens/min) | console.groq.com |
+| none | local model: `ollama pull qwen3:8b` | your machine |
 
-## Run the API
+> **One-command Docker setup (`docker compose up`) is not done yet** (open issue CHORE-8: the container must run agents as
+> an unprivileged user so they cannot read the answer keys). Until then, use the native setup above.
 
-```bash
-cd apps/api && npm install && npm run start:dev      # http://localhost:3000/api
-```
+## Run an experiment from the UI
 
-| Endpoint | What it does |
+An experiment compares **A** and **B** on the same tasks. Change **one** thing between them to learn what that thing does.
+
+1. **Models & harnesses** (top bar). Optional: press **Test** on the model you want. It makes one real request with a tool
+   and tells you whether the key works and the model can call tools.
+2. **New experiment.** Two builders, side by side:
+   - **Harness:** `baseline`, `hermes` or `mock`. The description and any requirement (Hermes needs ≥ 64k context) are shown.
+   - **Model:** from the registry, with its limits underneath.
+   - **Memory between sessions:** Off / On.
+   - **Skills:** click the chips to give the agent skill documents it can open.
+   - **Limits and sampling** (folded): temperature, max steps, max tokens, timeout.
+3. Set up A, press **A → B** to copy it, then change **one** thing in B. The **What changes** bar names the axes that differ:
+   green = exactly one, red = none or several (then a difference cannot be pinned to one cause).
+4. **Tasks.** Click a category chip to include or exclude it (blue = included), or **Pick individual tasks**. Choose the tasks
+   where your change can matter, plus a few where it should not (controls):
+
+   | You are testing | A vs B differ in | Include |
+   |---|---|---|
+   | skills | skills | **skill** tasks (+ exact as controls) |
+   | memory | memory | **memory** tasks (+ a few others) |
+   | a model or a harness | model / harness | all 20 |
+
+5. **Trials per task** (N, default 3), a **name** (default "A vs B") and your **hypothesis**, written before you see results.
+   The line underneath shows the total: *tasks × 2 × N trials*.
+6. **Start experiment.** You land on the experiment page; it updates every 2 s.
+
+While it runs: grey dots fill in as trials finish. A red dashed dot is **invalid** (the provider or harness failed after
+retries, e.g. a rate limit); it is not counted as a wrong answer, and **Retry invalid** appears when the run ends. **Do not
+edit the project files during a run:** trials run on the working copy, and the page warns if the code changed mid-run.
+For results you will report, run from a separate `git worktree` nobody edits.
+
+Configs you build are saved automatically as `configs/<harness>-<model>-<id>.json`. If the same content already exists, it
+is reused: the config ID is a hash of its content.
+
+## Read the results
+
+On an experiment's page, top to bottom:
+
+| Section | What it tells you |
 |---|---|
-| `GET /api/catalog` | configs (with content-hash IDs) and tasks |
-| `POST /api/experiments` | `{name, hypothesis, config_a, config_b, task_ids?, n_trials?}` → queues every task × config × trial |
-| `GET /api/experiments/:id` | status and progress (pending / running / done / invalid) |
-| `GET /api/experiments/:id/compare` | per-task deltas, mean delta, 95% bootstrap CI, verdict, for score, cost, tokens and latency |
-| `GET /api/trials/:id` | one trial: full trace, grades with reasoning |
-| `POST /api/experiments/:id/retry-invalid` | re-queue trials that failed for infrastructure reasons |
-| `GET /api/experiments/:id/export.json` / `export.csv` | export results |
+| **Verdict card** | Score change B − A, its 95% CI as a chart, and the verdict: *B better*, *B worse*, *No detectable difference (could be noise)*, or *Too few tasks to judge* (under 5 finished tasks). Also how many tasks got better, worse or stayed the same, and the noise between repeated runs. |
+| **Quality, cost and speed** | Score, tokens, latency, actual cost and the same tokens priced at Claude Opus 5.5 list price, each with a CI; per-config totals; **Export JSON / CSV**. |
+| **Why trials failed** | Failure categories per config: timeout, step_exhaustion, loop, bad_tool_args, wrong_tool, grader_disagreement, gave_up_early, wrong_answer. |
+| **Per task** | One row per task: a dot per trial for A and B (green pass, amber partial, red fail, dashed red invalid) and the per-task delta. **Click a dot** to open that trial. |
+| **Trial page** | Score, status, failure category and signals, tokens, latency, isolation; **Why**: each grader's reasoning; **Trajectory**: every step by session: messages, model calls, tool calls and results, memory reads/writes, skills used, errors, final answer. |
 
-UI: build it once and the API serves it on the same port: `cd apps/web && npm install && npm run build`, then open
-http://localhost:3000. For UI development with hot reload: `npm run dev` (http://localhost:5173, proxies `/api`).
+Worked example with real numbers: [docs/EXPERIMENT.md](docs/EXPERIMENT.md).
 
-Tests: `cd apps/api && npm test` (statistics + an end-to-end experiment through the real runner with the free mock harness).
+## Add a model
 
-## Run one trial
+**From the UI:** *Models & harnesses → Add a model*: display name, the model id at the provider, base URL, and the **name** of
+the key variable in `.env` (empty for a local model). **Test connection** makes one real tool-calling request before you save.
+It is stored in `configs/models.json` and appears in the experiment builder.
 
-```bash
-cd runner
-set -a; . ../.env; set +a
-echo '{"task_dir": "../tasks/count-csv-rows",
-       "config": '"$(cat ../configs/baseline-groq-gpt-oss-20b.json)"'}' > /tmp/trial.json
-uv run python -m evalrunner.run_trial /tmp/trial.json
-```
+**By hand:** add the same fields to `configs/models.json`. Any OpenAI-compatible endpoint works with no code (Ollama, Groq,
+Gemini, OpenRouter, OpenAI, vLLM). A **different API protocol** (e.g. Anthropic's Messages API) needs one adapter class in
+`runner/evalrunner/models/` implementing `ModelAdapter.chat()` plus one line in `models/__init__.py`.
 
-Use `configs/mock-solve.json` to run without any model or key.
+## Add a harness
+
+A harness is a program, so it is added in code, not in the UI (the *Models & harnesses* page lists the registered ones
+and these steps). One class plus one registry line; nothing else in the platform changes.
+
+1. Create `runner/evalrunner/harnesses/<name>.py`:
+   ```python
+   class MyHarness(HarnessAdapter):
+       id = "my-harness"
+       version = "1"
+       description = "What it is, in one line."
+       settings = ("skills", "memory", "max_steps", "timeout_s")   # the config settings it uses
+       requirements = ""                                            # e.g. "needs >= 64k context"
+
+       def run_trial(self, ctx: TrialContext) -> Trace:
+           trace = Trace()
+           # for each prompt in ctx.task.sessions: run the agent in ctx.sandbox_dir with ctx.config.model,
+           # record steps: trace.add("tool_call", ...), trace.add("tool_result", ...), trace.add("final_answer", text=...)
+           return trace
+   ```
+   Record agent failures (wrong answer, step limit, timeout) in the trace; raise `ProviderError` only for infrastructure
+   failures. Run any external process through `isolation.confine(cmd, ctx.sandbox_dir.parent)`.
+2. Register it in `runner/evalrunner/harnesses/__init__.py`: `MyHarness.id: MyHarness`.
+3. Reload the UI: it appears in the builder.
 
 ## Add a task
 
-1. Create `tasks/<task-id>/` with:
-   - `task.yaml`: `id`, `category` (`code | exact | skill | memory | judge`), `sessions` (one prompt per session;
-     two sessions for memory tasks), and `graders`.
-   - `fixtures/`: files the agent starts with (copied into its sandbox).
-   - `tests/`: hidden tests for `unit_tests` graders (the grader uses this copy, not the agent's).
+1. Create `tasks/<task-id>/`:
+   - `task.yaml`: `id`, `category` (`code | exact | skill | memory | judge`), `sessions` (one prompt per session; two for
+     memory tasks), `graders`.
+   - `fixtures/`: files the agent starts with. `tests/`: hidden tests for `unit_tests` (the grader uses this copy).
    - `reference/files/` and/or `reference/answer.txt`: a correct solution.
-2. Grader types:
+2. Graders:
    ```yaml
    graders:
      - type: exact_match      # final answer equals `expected`
@@ -123,72 +154,66 @@ Use `configs/mock-solve.json` to run without any model or key.
      - type: file_check       # contains / not_contains / regex / json_fields on a file
        path: out.json
        json_fields: {port: 8080}
-     - type: unit_tests       # pass = command exits 0
+     - type: unit_tests       # pass = all tests pass
        command: "python -m pytest -q tests"
      - type: llm_judge        # yes/no rubric graded by the judge model
        target_file: summary.md
        context_files: [incident.md]
        rubric: ["States the root cause.", "Invents no facts."]
    ```
-3. Run `cd runner && uv run pytest tests/test_graders.py`. For deterministic graders it checks that your reference
-   solution scores 1.0 and an empty attempt scores 0.0, so a broken task fails loudly.
+   Trial score = mean of its graders; passed = all passed.
+3. `cd runner && uv run pytest tests/test_graders.py` checks that your reference solution scores 1.0 and an empty attempt
+   0.0, so a broken task fails loudly.
 
-## Add a harness
+## API
 
-A harness is one Python class plus one registry line; nothing else in the platform changes. (It cannot be added from
-the UI: it is code. The Models & harnesses page lists the registered ones and these steps.)
+`cd apps/api && npm run start:dev` → http://localhost:3000/api
 
-1. Create `runner/evalrunner/harnesses/<name>.py`:
-   ```python
-   class MyHarness(HarnessAdapter):
-       id = "my-harness"
-       version = "1"
-       def run_trial(self, ctx: TrialContext) -> Trace:
-           trace = Trace()
-           # run ctx.task.sessions inside ctx.sandbox_dir with ctx.config.model / ctx.config.settings
-           # record steps with trace.add("tool_call", ...), trace.add("final_answer", text=...)
-           return trace
-   ```
-   Agent failures (wrong answer, step limit, timeout) are recorded in the trace, never raised. Raise
-   `ProviderError` only for infrastructure failures.
-2. Register it in `runner/evalrunner/harnesses/__init__.py`: `MyHarness.id: MyHarness`.
-3. Use it from a config: `"harness": "my-harness"`.
+| Endpoint | What it does |
+|---|---|
+| `GET /api/catalog` | configs (with content-hash IDs), tasks, skills, harnesses, models |
+| `POST /api/experiments` | `{name, hypothesis, config_a, config_b, task_ids?, n_trials?}`; a config is a saved file name or `{harness, model, settings}` |
+| `GET /api/experiments/:id` | status and progress |
+| `GET /api/experiments/:id/compare` | per-task deltas, CIs, verdicts, totals, failure categories, code-version mismatches |
+| `GET /api/trials/:id` | one trial: full trace and grades |
+| `POST /api/experiments/:id/retry-invalid` | re-queue invalid trials (e.g. after a daily quota reset) |
+| `GET /api/experiments/:id/export.json` · `export.csv` | export |
+| `POST /api/models` · `POST /api/models/check` | add a model · test one |
 
-## Add a model
+One trial without the API: `cd runner && uv run python -m evalrunner.run_trial trial.json` with
+`{"task_dir": "../tasks/count-csv-rows", "config": <a config>}` (use `configs/mock-solve.json` for no model, no key).
 
-**From the UI:** Models & harnesses → Add a model: display name, model id, base URL, and the *name* of the key
-variable in `.env`. "Test connection" makes one real request with a tool, so you know it works and supports tool
-calling before you use it. It is saved to `configs/models.json` and appears in the experiment builder.
+## Tests
 
-**By hand:** add the same fields to `configs/models.json`.
+| Command | Proves |
+|---|---|
+| `cd runner && uv run pytest` | 79 tests: every grader on reference/empty runs, harness loop, retries, isolation attacks, failure rules |
+| `cd apps/api && npm test` | 2 suites, 15 tests: statistics (hand example, coverage simulation), an end-to-end experiment through the real runner |
+| `cd apps/web && npm run build` | UI type-checks and builds |
+| `cd runner && uv run python ../judge_validation/validate_judge.py` | judge accuracy and Cohen's kappa against labels |
 
-**Any OpenAI-compatible endpoint** (Ollama, Groq, Gemini, OpenRouter, OpenAI, vLLM, …) needs only a config file:
+## Status
 
-```json
-{"name": "baseline-my-model", "harness": "baseline",
- "model": {"provider": "openai_compat", "id": "<model name>",
-           "base_url": "https://<provider>/v1", "api_key_env": "MY_PROVIDER_KEY"},
- "settings": {"temperature": 0.7, "max_steps": 15, "max_tokens": 2000, "timeout_s": 180}}
-```
-
-**A different API protocol** (for example Anthropic's Messages API) needs one adapter class implementing
-`ModelAdapter.chat()` in `runner/evalrunner/models/` plus one line in `models/__init__.py`.
+| Area | Status |
+|---|---|
+| Runner, harnesses (mock, baseline, hermes), model adapter, graders, 20 tasks, failure analysis | ✅ |
+| Isolation (macOS OS sandbox), secret and account-ID scrubbing, per-trial code version | ✅ |
+| API, statistics, export; UI (runs, A/B builder, compare, trial, models & harnesses) | ✅ |
+| Design doc, known limits, experiment write-up with cost | ✅ |
+| Judge validation | 🟡 provisional: labels await human review (CHORE-5) |
+| Baseline vs Hermes experiment (102 trials) | 🟡 running |
+| Docker (`docker compose up`) with agent isolation | ⬜ CHORE-8 |
+| Video | ⬜ |
 
 ## Repository layout
 
 ```
-runner/        Python: run_trial, sandbox, harnesses/, models/, graders/, tests/
-tasks/         20 tasks, one folder each
-configs/       configurations (JSON) and the judge model (judge.json)
-skills/        skill documents the agent can load when a config enables them
-judge_validation/  human-labelled judge outputs + validate_judge.py (accuracy, Cohen's kappa)
-docs/          DECISIONS.md (why), DESIGN.md, LIMITS.md, EXPERIMENT.md
-apps/api       NestJS API: experiments, scheduler, statistics, export (SQLite in data/)
-apps/web       Vue 3 UI: Run (define configs, start experiments), Compare, Trial
+runner/            Python: run_trial, sandbox, isolation, harnesses/, models/, graders/, failures, tests/
+apps/api           NestJS API: experiments, scheduler, statistics, export (SQLite in data/)
+apps/web           Vue 3 UI
+tasks/             20 tasks, one folder each
+configs/           configs (JSON), models.json (model registry), judge.json, prices.json
+skills/            skill documents
+judge_validation/  labelled judge outputs + validate_judge.py
+docs/              DESIGN, LIMITS, EXPERIMENT, DECISIONS
 ```
-
-## Documentation
-
-- [PLAN.md](PLAN.md): the agreed design and schedule
-- [docs/DECISIONS.md](docs/DECISIONS.md): every decision and assumption, with the reason
-- [CHANGELOG.md](CHANGELOG.md): what changed in each version
