@@ -82,3 +82,12 @@
 - Check: list() reports done for every experiment with no pending/running trials (API test).
 - Branch: fix/19-stale-experiment-status
 - Branch fix/19-stale-experiment-status · Evidence: test fails before, passes after.
+
+## DOCS-20 · Deliverables: README, DESIGN, LIMITS, EXPERIMENT (+ cost)      [chore · closed]  parent: main
+- README: setup, running an experiment from the UI, adding a model / harness / task.
+- docs/DESIGN.md: architecture, adapter interfaces, data model, isolation + reproducibility, graders + validation, statistics + choice of N.
+- docs/LIMITS.md: where conclusions should not be trusted.
+- docs/EXPERIMENT.md: experiment 4 (skills off vs on): hypothesis, setup, results with CI, trajectories, conclusion, cost.
+- Written in a separate worktree (../assignment-docs) because experiment 5 is running on the main working tree.
+- Branch: docs/deliverables
+- Evidence: no private data in docs (grep), all internal links resolve, retry/lane/grader claims checked against code; numbers from the API for experiments 1, 4, 5.

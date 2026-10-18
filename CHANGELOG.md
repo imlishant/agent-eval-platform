@@ -4,7 +4,16 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- The experiment of record and its report.
+- Docker with agent isolation (CHORE-8); baseline vs Hermes results (experiment 5, running); video.
+
+## [0.10.0] - 2026-10-18 · Deliverable documents (`docs/deliverables`)
+- README rewritten: setup, running an experiment from the UI step by step, reading results, adding a model / harness / task.
+- docs/DESIGN.md: architecture, adapter interfaces, data model, isolation and reproducibility, graders and their
+  validation, statistical method and the choice of N (measured within- vs between-task SD).
+- docs/LIMITS.md: where conclusions should not be trusted (task-set size, judge, contamination, providers, harness quirks).
+- docs/EXPERIMENT.md: experiment 4, skills off vs on (+0.36, 95% CI [+0.06, +0.69], B better; controls unchanged),
+  trajectories, conclusion, and the cost formula with actual ($0) and Opus 5.5 list-price figures.
+- Configs of experiments 4 and 5 committed so they can be reproduced.
 
 ## [0.9.0] - 2026-10-18 · Simpler UI (`feat/ui-config-builder`)
 - New experiment page: A and B each built from harness × model × memory × skills; "What changes" shows the axes.
