@@ -4,7 +4,15 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- Docker with agent isolation (CHORE-8); video.
+- Video (by the author).
+
+## [0.11.0] - 2026-10-18 · Docker (`feat/docker`)
+- `docker compose up --build`: one container (API, UI, runner, Hermes Agent), data in a volume, `.env` optional.
+- Linux isolation: each trial's agent runs as its own unprivileged user ID (setpriv), trial folder mode 700, answer keys
+  root-only; reported as `isolation: unprivileged-user`.
+- Verified from a fresh clone: API + UI up, 80 runner tests pass inside the container, real trials for both harnesses.
+- Fixed on the way: `fix/22` validate_judge loads .env; `fix/23` stale api lock file (npm 11); `fix/24` Hermes test
+  depended on machine state; group write on the Hermes base lock files.
 
 ## [0.10.1] - 2026-10-18 · Experiment 5 results and a memory-off fix (`fix/21-…`, `docs/experiment-5`)
 - docs/EXPERIMENT.md now holds both experiments: baseline vs Hermes on Gemini 3.1 Flash Lite (17 tasks, N = 3, 66 valid

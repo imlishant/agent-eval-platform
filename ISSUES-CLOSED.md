@@ -121,3 +121,8 @@
 - Check: the test uses its own temporary prepared base; passes on the Mac and inside the container.
 - Branch: fix/24-hermes-test-base
 - Branch fix/24-hermes-test-base · Evidence: before, fails in a fresh container (no prepared base; then fake binary not executable by the unprivileged agent); after, 80/80 on the Mac and 80/80 inside the container.
+
+## CHORE-8 · Docker (`docker compose up`) with agent isolation           [chore · closed]  parent: main
+- In Docker, run agent processes as a separate unprivileged user that cannot read tasks/*/reference or tests.
+- Check: isolation attack tests pass inside the container.
+- Branch feat/docker · Evidence: fresh clone of feat/docker, `docker compose up --build`: health ok, UI 200, isolation unprivileged-user, 80/80 pytest in container; real trials: baseline (Groq) 1.0, Hermes (Gemini 3.5 Flash Lite) 1.0, both unprivileged-user.

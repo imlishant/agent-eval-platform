@@ -14,7 +14,7 @@ Agent Evals Platform per `PLAN.md` (v2): every PDF deliverable, free providers o
 
 ## In progress
 - Nothing half-done. Branch: main. API may still run on :3000 (`pkill -f "node dist/main.js"`).
-- Open issues: CHORE-5 (author reviews judge labels), CHORE-8 (Docker with agent isolation).
+- Open issues: CHORE-5 (author reviews judge labels). Docker done and verified (v0.11.0).
 
 ## Blocked / open questions
 - Author decision: no more experiments (stated 2026-10-18).
@@ -22,8 +22,9 @@ Agent Evals Platform per `PLAN.md` (v2): every PDF deliverable, free providers o
 - Agent-system repo: `main` with change-flow fix CF-3 merged locally, not pushed (ask).
 
 ## Next action
-Remaining PDF items: Docker (`docker compose up`, CHORE-8: agents as unprivileged user), judge label review (CHORE-5),
-video (≤10 min: define a config, run, compare, drill into a failed trial: experiment 4, trial 61 or 63, is a good one).
+Remaining PDF items: judge label review (CHORE-5, `judge_validation/labels.json`, then
+`cd runner && uv run python ../judge_validation/validate_judge.py`), video by the author.
+Run the app: `docker compose up --build` (or native, see README). Native DB holds experiments 1-5; Docker volume is separate.
 
 ## Gotchas
 - Gemini free tier: 500 requests/day/model, 250k tokens/min; one Hermes trial ≈ 30k tokens/call → TPM 429s come back `invalid`, retried with backoff; `POST /api/experiments/:id/retry-invalid` after the daily reset. Groq: 8k tokens/min (slow, ~1 trial/min). gemma-4-31b hangs; use 26b.

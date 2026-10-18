@@ -98,7 +98,10 @@ can mislead, and what we do about it. Evidence and dates are in [DECISIONS.md](D
   answer in testing).
 - **In Docker, agents share a group that can write the prepared Hermes base** (Hermes needs lock files there), so a
   malicious agent could alter the Hermes install used by later trials. The macOS profile allows only lock/lease files.
-- **The Docker setup has not yet been verified end to end** on this machine (no Docker installed at the time of writing).
+- **Docker was verified on one machine** (OrbStack, Apple Silicon, arm64). An x86-64 host builds the same Dockerfile but was
+  not tested; the native module (better-sqlite3) and Hermes install are the parts most likely to differ.
+- **Ollama inside Docker** is reached at `host.docker.internal`; the pre-registered local model uses `localhost` and needs a
+  model entry with the other base URL.
 - **The sandbox allows network access** (the agent needs the model API). An agent could reach the internet with its
   terminal; none of the tasks rewards that, but it is not prevented.
 - **Experiments run on the working tree.** If the code changes during a run, trials disagree with the experiment's code
