@@ -99,3 +99,10 @@
 - Check: test with a fake hermes binary: in session 2 no other Hermes home exists; fails on the old code.
 - Branch: fix/21-hermes-memory-off-leak
 - Branch fix/21-hermes-memory-off-leak · Evidence: fake-hermes test fails before (secret visible in session 2), passes after; 80 pytest.
+
+## FIX-22 · validate_judge.py fails: does not load .env                     [bug · closed]  parent: main
+- Repro: `cd runner && uv run python ../judge_validation/validate_judge.py` → ProviderError "env var GEMINI_API_KEY is not set"
+  (the API loads .env itself; the script did not, and the README did not say to).
+- Check: the script loads the repo's .env when present; run as documented, it reaches the judge.
+- Branch: fix/22-validate-judge-env
+- Branch fix/22-validate-judge-env · Evidence: before = the author's run (ProviderError); after = same command with GEMINI_API_KEY unset in the shell: judge runs, 15 items, accuracy 1.00, kappa 1.00.
