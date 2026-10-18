@@ -106,3 +106,10 @@
 - Check: the script loads the repo's .env when present; run as documented, it reaches the judge.
 - Branch: fix/22-validate-judge-env
 - Branch fix/22-validate-judge-env · Evidence: before = the author's run (ProviderError); after = same command with GEMINI_API_KEY unset in the shell: judge runs, 15 items, accuracy 1.00, kappa 1.00.
+
+## FIX-23 · apps/api package-lock.json out of sync with package.json      [bug · closed]  parent: main
+- Repro: `npm ci` (clean install, as in the Docker build) fails: "lock file's @emnapi/wasi-threads@1.2.1 does not satisfy 1.2.3",
+  missing @emnapi/core, @emnapi/runtime. Stale since the NestJS 12 -> 11 pin (D16); local `npm install` tolerated it.
+- Check: `npm ci` succeeds on a clean copy with npm 11 (local) and npm 10 (node:22 image).
+- Branch: fix/23-api-lockfile
+- Branch fix/23-api-lockfile · Evidence: npm ci on a clean copy: before fails (npm 11 and 10); after passes with npm 11.6.2 locally and in node:22 with npm 11.6.2. Lock is npm-11 format; package.json now declares engines npm >= 11. 15 jest pass.
