@@ -3,6 +3,7 @@
 # Agents run as a per-trial unprivileged user (runner/evalrunner/isolation.py); answer keys are root-only.
 
 FROM node:22-bookworm-slim AS web
+RUN npm install -g npm@11.6.2   # lock files are npm 11 format (FIX-23)
 WORKDIR /src/apps/web
 COPY apps/web/package.json apps/web/package-lock.json ./
 RUN npm ci
@@ -10,6 +11,7 @@ COPY apps/web/ ./
 RUN npm run build
 
 FROM node:22-bookworm-slim AS api
+RUN npm install -g npm@11.6.2
 WORKDIR /src/apps/api
 COPY apps/api/package.json apps/api/package-lock.json ./
 RUN npm ci
