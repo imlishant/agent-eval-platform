@@ -113,3 +113,11 @@
 - Check: `npm ci` succeeds on a clean copy with npm 11 (local) and npm 10 (node:22 image).
 - Branch: fix/23-api-lockfile
 - Branch fix/23-api-lockfile · Evidence: npm ci on a clean copy: before fails (npm 11 and 10); after passes with npm 11.6.2 locally and in node:22 with npm 11.6.2. Lock is npm-11 format; package.json now declares engines npm >= 11. 15 jest pass.
+
+## FIX-24 · Hermes leak test depends on the machine having a prepared Hermes base      [bug · closed]  parent: main
+- Repro: in a fresh container, tests/test_hermes.py::test_memory_off_session_2_cannot_read_session_1 fails with
+  "could not prepare Hermes base home": the fake hermes binary cannot prepare the base; on the dev Mac the real base
+  already existed, so the test passed by accident.
+- Check: the test uses its own temporary prepared base; passes on the Mac and inside the container.
+- Branch: fix/24-hermes-test-base
+- Branch fix/24-hermes-test-base · Evidence: before, fails in a fresh container (no prepared base; then fake binary not executable by the unprivileged agent); after, 80/80 on the Mac and 80/80 inside the container.

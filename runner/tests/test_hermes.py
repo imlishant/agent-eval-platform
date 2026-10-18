@@ -1,6 +1,7 @@
 """Hermes event mapping, tested offline on recorded stream-json output (no Hermes run, no quota)."""
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -59,7 +60,12 @@ def test_memory_off_session_2_cannot_read_session_1(tmp_path, monkeypatch):
     from evalrunner.sandbox import trial_dirs
     from evalrunner.schema import Config, Task, TrialContext
 
-    fake = tmp_path / "hermes"
+    # outside pytest's private tmp: in Docker the agent runs as an unprivileged user and must be able to execute it,
+    # like the real Hermes install under /opt
+    import tempfile
+    bindir = Path(tempfile.mkdtemp(prefix="fakehermes-"))
+    bindir.chmod(0o755)
+    fake = bindir / "hermes"
     fake.write_text(
         '#!/bin/sh\n'
         'if [ "$1" = "--version" ]; then echo "Hermes Agent v0.0.0"; exit 0; fi\n'
@@ -68,6 +74,11 @@ def test_memory_off_session_2_cannot_read_session_1(tmp_path, monkeypatch):
         'printf \'{"type":"result","exit_code":0,"text":"other_files_with_secret=%s","tokens":{}}\\n\' "$seen"\n')
     fake.chmod(0o755)
     monkeypatch.setenv("HERMES_BIN", str(fake))
+    # own prepared base, so the test does not depend on this machine's real Hermes setup
+    import evalrunner.harnesses.hermes as hermes_mod
+    base = tmp_path / "hermes-base"
+    (base / "installs").mkdir(parents=True)
+    monkeypatch.setattr(hermes_mod, "BASE_HOME", base)
 
     task = Task.load(REPO / "tasks" / "remember-codeword")
     cfg = Config.from_dict({"name": "t", "harness": "hermes",
