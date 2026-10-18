@@ -8,11 +8,26 @@ trusted; below that, judge-graded tasks are flagged "low trust" (PLAN §6).
 
 import importlib
 import json
+import os
 import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
+
+
+def load_env(path: Path) -> None:
+    """Read KEY=value lines from the repo's .env (as the API does), without overriding the environment."""
+    if not path.is_file():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if line and not line.startswith("#") and "=" in line:
+            key, value = line.split("=", 1)
+            os.environ.setdefault(key.strip(), value.strip().strip('"').strip("'"))
+
+
+load_env(ROOT / ".env")
 sys.path.insert(0, str(ROOT / "runner"))
 from evalrunner.schema import Task  # noqa: E402
 
