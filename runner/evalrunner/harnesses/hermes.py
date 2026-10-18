@@ -67,7 +67,10 @@ class HermesHarness(HarnessAdapter):
                 os.chown(dirpath, 0, AGENT_GID, follow_symlinks=False)
                 os.chmod(dirpath, 0o775)
                 for f in files:
-                    os.chown(os.path.join(dirpath, f), 0, AGENT_GID, follow_symlinks=False)
+                    path = os.path.join(dirpath, f)
+                    if not os.path.islink(path):
+                        os.chown(path, 0, AGENT_GID)
+                        os.chmod(path, os.stat(path).st_mode | 0o060)  # group read + write (lock files)
         m = re.search(r"v(\d+\.\d+\.\d+)", out)
         self.version = f"1+hermes-{m.group(1) if m else 'unknown'}"
 
