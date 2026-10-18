@@ -159,3 +159,13 @@ Format: ID · date · decision · why · what we gave up. Newest last. Seed for 
   `.env` and only the variable NAME is stored (a key-looking value is rejected).
 - Harnesses: cannot be added from the UI by design: a harness is an adapter (code), which is what the PDF asks to show.
   The page lists each harness, the settings it uses, its requirements, and the steps to add one.
+
+## D21 · 2026-10-18 · Experiment 5 (baseline vs Hermes) and what its one surprise revealed
+- 17 tasks × N = 3 on Gemini 3.1 Flash Lite; 36 of 102 trials lost to the daily free quota (dropped on both sides).
+  Result: no detectable difference (+0.06, CI [0.00, +0.18]); Hermes ~18× tokens per trial.
+- The only differing task (remember-codeword, memory off) was explained by inspection: one Hermes trial read session 1's
+  prompt from Hermes's stored request dumps (a leak in our adapter → FIX-21: delete each session's home when memory is
+  off), the other wrote the code word to a file in the working folder (legitimate; memory tasks measure "carry a fact
+  across sessions by any means").
+- No re-run, by the author's choice (no more experiments): the write-up reports the result with these caveats.
+- Lesson: a single surprising per-task result is worth reading in the trace before believing it.

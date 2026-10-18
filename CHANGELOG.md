@@ -4,7 +4,14 @@ Versions follow `0.<milestone>.<patch>` until the first complete release (1.0.0 
 Each entry names the branch it came from; all branches are kept on GitHub.
 
 ## [Unreleased]
-- Docker with agent isolation (CHORE-8); baseline vs Hermes results (experiment 5, running); video.
+- Docker with agent isolation (CHORE-8); video.
+
+## [0.10.1] - 2026-10-18 · Experiment 5 results and a memory-off fix (`fix/21-…`, `docs/experiment-5`)
+- docs/EXPERIMENT.md now holds both experiments: baseline vs Hermes on Gemini 3.1 Flash Lite (17 tasks, N = 3, 66 valid
+  trials): no detectable difference (+0.06, CI [0.00, +0.18]); Hermes used ~18× the tokens. Cost section uses actual tokens.
+- `fix/21-hermes-memory-off-leak`: with memory off, each session's Hermes home is deleted when the session ends; found by
+  inspecting experiment 5's only differing task.
+- LIMITS: memory tasks can be solved by note-taking in the shared folder; ceiling effect; the leak.
 
 ## [0.10.0] - 2026-10-18 · Deliverable documents (`docs/deliverables`)
 - README rewritten: setup, running an experiment from the UI step by step, reading results, adding a model / harness / task.
