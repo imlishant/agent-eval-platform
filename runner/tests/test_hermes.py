@@ -48,3 +48,31 @@ def test_agent_level_error_is_recorded_and_scores_as_no_answer():
 def test_crash_without_result_is_invalid():
     with pytest.raises(ProviderError, match="crashed"):
         mapped("Traceback: something broke", stderr="ImportError")
+
+
+def test_memory_off_session_2_cannot_read_session_1(tmp_path, monkeypatch):
+    """Experiment 5 found a leak: Hermes stores every prompt in its home, and with memory off session 1's home
+    stayed readable from session 2. A fake hermes binary records its prompt like Hermes does and reports which
+    Hermes homes it can see under HOME. No model call, no quota."""
+    from evalrunner.harnesses.hermes import HermesHarness
+    from evalrunner.isolation import REPO
+    from evalrunner.sandbox import trial_dirs
+    from evalrunner.schema import Config, Task, TrialContext
+
+    fake = tmp_path / "hermes"
+    fake.write_text(
+        '#!/bin/sh\n'
+        'if [ "$1" = "--version" ]; then echo "Hermes Agent v0.0.0"; exit 0; fi\n'
+        'mkdir -p "$HERMES_HOME/sessions"; printf "%s" "$3" > "$HERMES_HOME/sessions/request_dump.json"\n'
+        'seen=$(grep -rl MARIGOLD "$HOME" 2>/dev/null | grep -v "^$HERMES_HOME" | wc -l | tr -d " ")\n'
+        'printf \'{"type":"result","exit_code":0,"text":"other_files_with_secret=%s","tokens":{}}\\n\' "$seen"\n')
+    fake.chmod(0o755)
+    monkeypatch.setenv("HERMES_BIN", str(fake))
+
+    task = Task.load(REPO / "tasks" / "remember-codeword")
+    cfg = Config.from_dict({"name": "t", "harness": "hermes",
+                            "model": {"provider": "openai_compat", "id": "m", "base_url": "http://localhost:9"},
+                            "settings": {"memory": "off", "timeout_s": 60}})
+    with trial_dirs(task) as (sb, home):
+        trace = HermesHarness().run_trial(TrialContext(task, cfg, sb, home))
+    assert trace.final_answer(session=2) == "other_files_with_secret=0"

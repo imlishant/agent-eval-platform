@@ -109,6 +109,10 @@ class HermesHarness(HarnessAdapter):
                 old = before.get(name, "")
                 if text != old:
                     trace.add("memory_write", file=name, note=text[len(old):] if text.startswith(old) else text)
+            if not memory_on:
+                # Hermes writes every prompt into its home (sessions/, logs/, spawn-ledger.json). With memory off,
+                # a later session must not be able to read them, so this session's home goes now (FIX-21).
+                shutil.rmtree(home, ignore_errors=True)
         return trace
 
     def _prepare_home(self, home: Path, ctx: TrialContext) -> None:
