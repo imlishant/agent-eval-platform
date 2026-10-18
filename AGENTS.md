@@ -26,7 +26,7 @@ Evaluate any AI harness × model and answer: did the agent improve, and how sure
 | API | `cd apps/api && npm run test` | unit + integration tests |
 | API dev | `cd apps/api && npm run start:dev` | server starts |
 | Web dev | `cd apps/web && npm run dev` | UI compiles and serves |
-| Web build | `cd apps/web && npm run build` | production build passes |
+| Web build | `cd apps/web && npm run build` | production build passes (API then serves it on :3000) |
 | Runner tests | `cd runner && python -m pytest` | graders + harnesses |
 | Grader self-check | `cd runner && python -m pytest tests/test_graders.py` | each grader correct |
 | Judge validation | `cd judge_validation && python validate_judge.py` | kappa ≥ 0.6 |
@@ -38,6 +38,9 @@ Evaluate any AI harness × model and answer: did the agent improve, and how sure
 - Never push secrets or API keys; `.env` is gitignored.
 - Adding a harness or model = writing one adapter + one dict/registry entry. Never change platform core for this.
 - Do not call `docker compose up` in CI without a `--build` clean run verified first.
+- Run experiments of record from a dedicated git worktree; never edit the repo while an experiment runs (trials execute the working tree).
+- Any bug found while working: stop, open an issue, fix on its own `fix/<id>` branch (change-flow); never inside a `feat/` commit.
+- Closed issues move to `ISSUES-CLOSED.md` (append-only); decisions go to `docs/DECISIONS.md`.
 - `PLAN.md` is the agreed design; propose changes before diverging.
 
 ## Doc map (read on demand, not up front)
