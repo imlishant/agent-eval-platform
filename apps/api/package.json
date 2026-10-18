@@ -33,5 +33,9 @@
       "<rootDir>/test/**/*.spec.ts"
     ],
     "testTimeout": 60000
+  },
+  "engines": {
+    "npm": ">=11",
+    "node": ">=22"
   }
 }
