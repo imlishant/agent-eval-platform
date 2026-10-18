@@ -13,19 +13,21 @@ from evalrunner.sandbox import trial_dirs
 from evalrunner.schema import Task, Trace
 
 TASK = Task.load(REPO / "tasks" / "fix-failing-test")
-macos_only = pytest.mark.skipif(level() != "sandbox-exec", reason="OS sandbox only on macOS here")
+isolated = pytest.mark.skipif(level() == "folder-only", reason="needs the macOS sandbox or Linux as root (Docker)")
+DENIED = ("Operation not permitted", "Permission denied")
 
 
-@macos_only
+@isolated
 def test_agent_cannot_read_reference_solutions_or_home():
     with trial_dirs(TASK) as (sb, home):
         out, err = bash(sb, home, {"cmd": f"cat {REPO}/tasks/fix-failing-test/reference/files/src/stats.py"})
-        assert err and "Operation not permitted" in out
-        out, err = bash(sb, home, {"cmd": f"ls {Path.home()}"})
-        assert err and "Operation not permitted" in out
+        assert err and any(d in out for d in DENIED)
+        if level() == "sandbox-exec":  # in Docker the runner's HOME is /root, already unreadable
+            out, err = bash(sb, home, {"cmd": f"ls {Path.home()}"})
+            assert err and any(d in out for d in DENIED)
 
 
-@macos_only
+@isolated
 def test_agent_cannot_see_other_trials():
     with trial_dirs(TASK) as (sb1, h1), trial_dirs(TASK) as (sb2, h2):
         (sb2 / "secret.txt").write_text("other trial")

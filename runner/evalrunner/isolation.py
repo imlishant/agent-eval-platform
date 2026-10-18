@@ -5,9 +5,15 @@ found this repo's reference solutions and copied one (and printed API keys with 
 
 macOS: every agent process runs under `sandbox-exec` with a profile that denies reading or writing
 the user's home folder, this repository, and other trials' folders, then re-allows only the trial's
-own folder and the read-only tool installs it needs (later rules win). Linux/Docker: see LIMITS.md
-(the container runs the agent as a separate user; without either, the level is reported as
-"folder-only" in every trial result so it is never silent).
+own folder and the read-only tool installs it needs (later rules win).
+
+Linux as root (the Docker image): every agent process drops to an unprivileged user ID of its own
+(one per trial, from the runner's PID, which is unique while the trial runs) via `setpriv`. The trial
+folder is chown'ed to that ID with mode 700, so trials cannot read each other, and the answer keys
+(`tasks/`, `judge_validation/`) are root-only in the image. A shared group gives write access to the
+prepared Hermes base only.
+
+Anything else: the level is reported as "folder-only" in every trial result, so it is never silent.
 """
 
 from __future__ import annotations
@@ -20,7 +26,10 @@ import tempfile
 from pathlib import Path
 
 REPO = Path(__file__).resolve().parents[2]
-TOOL_CACHE = Path.home() / ".cache" / "evalrunner"   # shared, prepared-once tool installs (e.g. Hermes base)
+# shared, prepared-once tool installs (e.g. the Hermes base); overridable for the Docker image
+TOOL_CACHE = Path(os.environ.get("EVAL_TOOL_CACHE", Path.home() / ".cache" / "evalrunner"))
+AGENT_UID_BASE = 20000   # Linux: agent user IDs are AGENT_UID_BASE + (runner pid % 10000)
+AGENT_GID = 20000        # shared group: may write the prepared Hermes base, nothing else
 SECRET_NAME = re.compile(r"KEY|TOKEN|SECRET|PASSWORD", re.I)
 # account identifiers that providers echo in error messages (e.g. Groq 429: "organization `org_…`")
 ACCOUNT_IDS = [
@@ -31,7 +40,27 @@ ACCOUNT_IDS = [
 
 
 def level() -> str:
-    return "sandbox-exec" if sys.platform == "darwin" and shutil.which("sandbox-exec") else "folder-only"
+    if sys.platform == "darwin" and shutil.which("sandbox-exec"):
+        return "sandbox-exec"
+    if sys.platform.startswith("linux") and os.geteuid() == 0 and shutil.which("setpriv"):
+        return "unprivileged-user"
+    return "folder-only"
+
+
+def agent_uid() -> int:
+    return AGENT_UID_BASE + os.getpid() % 10000
+
+
+def _give_to_agent(root: Path) -> None:
+    """Make the trial folder belong to this trial's agent ID only (mode 700 on folders)."""
+    uid = agent_uid()
+    for dirpath, dirnames, filenames in os.walk(root):
+        os.chown(dirpath, uid, AGENT_GID, follow_symlinks=False)
+        os.chmod(dirpath, 0o700)
+        for name in filenames:
+            os.chown(os.path.join(dirpath, name), uid, AGENT_GID, follow_symlinks=False)
+        for name in dirnames:
+            os.chown(os.path.join(dirpath, name), uid, AGENT_GID, follow_symlinks=False)
 
 
 def _profile(trial_root: Path) -> str:
@@ -58,7 +87,11 @@ def _profile(trial_root: Path) -> str:
 
 def confine(cmd: list[str], trial_root: Path) -> list[str]:
     """Wrap a command so it can only touch `trial_root` (plus read-only tool installs)."""
-    if level() != "sandbox-exec":
+    lvl = level()
+    if lvl == "unprivileged-user":
+        _give_to_agent(trial_root)
+        return ["setpriv", f"--reuid={agent_uid()}", f"--regid={AGENT_GID}", "--clear-groups", "--", *cmd]
+    if lvl != "sandbox-exec":
         return cmd
     profile = trial_root / "sandbox.sb"
     if not profile.exists():

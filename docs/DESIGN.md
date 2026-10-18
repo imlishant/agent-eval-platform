@@ -127,7 +127,9 @@ the disk, found this repo's reference answer and copied it, and printed API keys
   the sessions of one trial, and only when the config says `memory: on`;
 - every agent process (Hermes, baseline `bash`, and the agent's code while `unit_tests` grades it) runs under the macOS
   OS sandbox (`sandbox-exec`): no reading or writing the user's home, this repo, or other trials; only its own trial folder
-  plus read-only tool installs. On other systems the level is recorded as `folder-only` on every trial (never silent);
+  plus read-only tool installs. In Docker (Linux, as root) each trial's agent processes run via `setpriv` as their own
+  unprivileged user ID with a mode-700 trial folder, and the answer keys are root-only in the image. Anywhere else the
+  level is recorded as `folder-only` on every trial (never silent);
 - results are scrubbed: env-var secrets → `[REDACTED:NAME]`, provider account IDs and emails → `[REDACTED]`;
 - the `unit_tests` grader removes pytest config files the agent may have planted and requires a JUnit report with >0
   tests and 0 failures, so code that exits 0 on import cannot pass.

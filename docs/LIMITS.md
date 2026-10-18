@@ -92,9 +92,16 @@ can mislead, and what we do about it. Evidence and dates are in [DECISIONS.md](D
 
 ## Isolation and reproducibility
 
-- **OS-level isolation is macOS only** (`sandbox-exec`). On Linux/Docker without the planned unprivileged-user setup
-  (open issue CHORE-8), trials run with folder isolation only and every trial records `isolation: folder-only`. Folder
-  isolation is not enough against an agent with a terminal: one copied a reference answer in testing.
+- **Two isolation mechanisms.** macOS: `sandbox-exec` profile. Docker (Linux, as root): each trial's agent runs as its own
+  unprivileged user ID with a mode-700 trial folder; answer keys are root-only. Elsewhere trials run with folder isolation
+  only and record `isolation: folder-only`, which is not enough against an agent with a terminal (one copied a reference
+  answer in testing).
+- **In Docker, agents share a group that can write the prepared Hermes base** (Hermes needs lock files there), so a
+  malicious agent could alter the Hermes install used by later trials. The macOS profile allows only lock/lease files.
+- **Docker was verified on one machine** (OrbStack, Apple Silicon, arm64). An x86-64 host builds the same Dockerfile but was
+  not tested; the native module (better-sqlite3) and Hermes install are the parts most likely to differ.
+- **Ollama inside Docker** is reached at `host.docker.internal`; the pre-registered local model uses `localhost` and needs a
+  model entry with the other base URL.
 - **The sandbox allows network access** (the agent needs the model API). An agent could reach the internet with its
   terminal; none of the tasks rewards that, but it is not prevented.
 - **Experiments run on the working tree.** If the code changes during a run, trials disagree with the experiment's code

@@ -7,7 +7,7 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 configurations, several times each, grades every run, and compares the two with confidence intervals, so a real
 improvement can be told apart from noise. Every number links back to the trace of what the agent did.
 
-> **Version 0.10.1.** History in [CHANGELOG.md](CHANGELOG.md). Design: [docs/DESIGN.md](docs/DESIGN.md) ·
+> **Version 0.11.0.** History in [CHANGELOG.md](CHANGELOG.md). Design: [docs/DESIGN.md](docs/DESIGN.md) ·
 > Known limits: [docs/LIMITS.md](docs/LIMITS.md) · Experiment: [docs/EXPERIMENT.md](docs/EXPERIMENT.md) ·
 > Decisions: [docs/DECISIONS.md](docs/DECISIONS.md)
 
@@ -30,7 +30,7 @@ improvement can be told apart from noise. Every number links back to the trace o
 
 ## Setup
 
-**Requirements:** macOS (for the OS sandbox; see LIMITS for Linux), [uv](https://docs.astral.sh/uv/) (installs Python 3.13),
+**Requirements (native):** macOS (for the OS sandbox; or use Docker), [uv](https://docs.astral.sh/uv/) (installs Python 3.13),
 Node.js 22+. Optional: [Ollama](https://ollama.com) for a local model; [Hermes Agent](https://hermes-agent.nousresearch.com)
 for the `hermes` harness (its first trial prepares a shared base in `~/.cache/evalrunner/hermes-base`, ~350 MB, once).
 
@@ -52,8 +52,21 @@ Open **http://localhost:3000**. Results are stored in `data/evals.db` (SQLite).
 | `GROQ_API_KEY` | gpt-oss-20b / 120b, fast, baseline harness only (8k tokens/min) | console.groq.com |
 | none | local model: `ollama pull qwen3:8b` | your machine |
 
-> **One-command Docker setup (`docker compose up`) is not done yet** (open issue CHORE-8: the container must run agents as
-> an unprivileged user so they cannot read the answer keys). Until then, use the native setup above.
+### With Docker (one command)
+
+```bash
+cp .env.example .env            # add your keys
+docker compose up --build       # → http://localhost:3000
+```
+
+One container: API + UI + runner + Hermes Agent (`INSTALL_HERMES=0 docker compose up --build` to skip Hermes). Results live
+in the `evals-data` volume. Agents run as a per-trial unprivileged user that cannot read the answer keys. To record the code
+version on every trial: `CODE_SHA=$(git rev-parse --short HEAD) docker compose up --build`. For a local Ollama model, use
+base URL `http://host.docker.internal:11434/v1`.
+
+Verified from a fresh clone (2026-10-18, OrbStack on Apple Silicon): `docker compose up --build` starts API + UI, the
+runner reports isolation `unprivileged-user`, all 80 runner tests pass inside the container, and real trials ran for both
+harnesses (baseline on Groq, Hermes on Gemini). First build takes ~5 minutes (Hermes install).
 
 ## Run an experiment from the UI
 
@@ -202,7 +215,7 @@ One trial without the API: `cd runner && uv run python -m evalrunner.run_trial t
 | Design doc, known limits, experiment write-up with cost | ✅ |
 | Judge validation | 🟡 provisional: labels await human review (CHORE-5) |
 | Experiments: skills off vs on (B better, +0.36); baseline vs Hermes (no detectable difference, Hermes 18× tokens) | ✅ [docs/EXPERIMENT.md](docs/EXPERIMENT.md) |
-| Docker (`docker compose up`) with agent isolation | ⬜ CHORE-8 |
+| Docker (`docker compose up --build`) with per-trial unprivileged-user isolation | ✅ verified from a clean clone |
 | Video | ⬜ |
 
 ## Repository layout
