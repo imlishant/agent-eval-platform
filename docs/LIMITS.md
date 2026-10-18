@@ -31,6 +31,11 @@ can mislead, and what we do about it. Evidence and dates are in [DECISIONS.md](D
   chance that a model memorised them. It does not remove it: CSV counting, FizzBuzz, slugify and pagination bugs are
   common in training data, so the code and exact tasks may overstate general ability. The repo is public; future models
   may train on it.
+- **Memory tasks can be solved without the memory feature.** The working folder persists between the two sessions of a
+  trial (like a project folder), so an agent can write the fact to a file in session 1 and read it in session 2. Hermes
+  did exactly that in experiment 5. The memory tasks therefore measure "carries a fact across sessions by any means".
+- **Ceiling effect.** In experiment 5 both agents solved 13 of 17 tasks every time. Short, well-specified tasks cannot
+  separate two capable agents; harder or longer tasks are needed to compare harnesses.
 - **Skill and memory tasks are built to need the capability.** They show *whether* a skill or memory can be used, not how
   much it helps on real work. A large effect on these tasks is expected by design.
 - **`wrong_answer` is a broad failure bucket.** "Did not know the house format" and "made an arithmetic error" both land
@@ -76,6 +81,10 @@ can mislead, and what we do about it. Evidence and dates are in [DECISIONS.md](D
   session, because with memory disabled it could still search the previous session's transcript.
 - **Hermes needs ≥ 64k context**, so it cannot run on the local 8B model; Hermes and baseline can only be compared on
   models both support.
+- **A memory-off leak affected experiment 5.** Hermes writes every prompt into its home folder; with memory off, session 1's
+  home stayed readable from session 2 and one trial used it (trial 86). Fixed after the run (FIX-21: the home is deleted
+  after each session). Experiment 5's one differing task is reported with this caveat; other harnesses that keep
+  transcripts on disk need the same care.
 - **Hermes can create skills** during a run; skills and memory are reset per trial, so this cannot leak between trials,
   but it can help within a trial.
 - **Tool sets differ.** Baseline has three tools; Hermes has many (terminal, search, file tools, memory, and more).

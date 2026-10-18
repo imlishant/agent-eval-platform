@@ -58,7 +58,7 @@ New harness = one class + one line in `harnesses/__init__.py`. Registered harnes
 |---|---|---|---|
 | `mock` | Scripted fake agent (reference answer or nothing). No model, no cost; tests the pipeline. | – | – |
 | `baseline` | Our minimal tool-calling loop: `bash`, `read_file`, `write_file`. | Names + one-line descriptions in the system prompt; the agent loads one with `use_skill(name)` (logged as `skill_used`). | `HOME/memory.md`, loaded at each session start (`memory_read`); `memory_write` tool. |
-| `hermes` | Hermes Agent (Nous Research), headless: `hermes chat -q … --oneshot --format stream-json`, one process per session. | Copied into the trial's Hermes home as `skills/<name>/SKILL.md`. | Hermes's own memory files; writes detected by diffing `memories/` per session. Memory off = a fresh Hermes home per session (Hermes can search past sessions even with memory disabled). |
+| `hermes` | Hermes Agent (Nous Research), headless: `hermes chat -q … --oneshot --format stream-json`, one process per session. | Copied into the trial's Hermes home as `skills/<name>/SKILL.md`. | Hermes's own memory files; writes detected by diffing `memories/` per session. Memory off = a fresh Hermes home per session, deleted when the session ends (Hermes stores every prompt in its home and can search past sessions even with memory disabled; FIX-21). |
 
 Hermes's JSON events (`tool_use`, `tool_result`, `text`, `result`) are mapped onto our trace schema, so both harnesses
 produce comparable traces.

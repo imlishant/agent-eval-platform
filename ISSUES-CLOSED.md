@@ -91,3 +91,11 @@
 - Written in a separate worktree (../assignment-docs) because experiment 5 is running on the main working tree.
 - Branch: docs/deliverables
 - Evidence: no private data in docs (grep), all internal links resolve, retry/lane/grader claims checked against code; numbers from the API for experiments 1, 4, 5.
+
+## FIX-21 · Hermes memory OFF leaks session 1 into session 2 (prompts stored in its home)   [bug · closed]  parent: main
+- Repro: experiment 5, trial 86 (hermes, memory off, remember-codeword): session 2 ran `grep -r codeword ~` and wrote
+  MARIGOLD-7. Hermes stores every prompt in its home (sessions/request_dump_*.json, spawn-ledger.json, logs/agent.log);
+  memory off gives each session a fresh home, but session 1's home stays readable inside the same trial folder.
+- Check: test with a fake hermes binary: in session 2 no other Hermes home exists; fails on the old code.
+- Branch: fix/21-hermes-memory-off-leak
+- Branch fix/21-hermes-memory-off-leak · Evidence: fake-hermes test fails before (secret visible in session 2), passes after; 80 pytest.

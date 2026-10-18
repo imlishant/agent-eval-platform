@@ -7,7 +7,7 @@ An agent = **harness** (the loop, tools, skills, memory, prompts) + **model**. T
 configurations, several times each, grades every run, and compares the two with confidence intervals, so a real
 improvement can be told apart from noise. Every number links back to the trace of what the agent did.
 
-> **Version 0.10.0.** History in [CHANGELOG.md](CHANGELOG.md). Design: [docs/DESIGN.md](docs/DESIGN.md) ·
+> **Version 0.10.1.** History in [CHANGELOG.md](CHANGELOG.md). Design: [docs/DESIGN.md](docs/DESIGN.md) ·
 > Known limits: [docs/LIMITS.md](docs/LIMITS.md) · Experiment: [docs/EXPERIMENT.md](docs/EXPERIMENT.md) ·
 > Decisions: [docs/DECISIONS.md](docs/DECISIONS.md)
 
@@ -37,7 +37,7 @@ for the `hermes` harness (its first trial prepares a shared base in `~/.cache/ev
 ```bash
 git clone <this repo> && cd <repo>
 cp .env.example .env                                   # add the keys you have (all have free tiers)
-cd runner   && uv sync && uv run pytest && cd ..       # Python env + 79 tests (no key needed)
+cd runner   && uv sync && uv run pytest && cd ..       # Python env + 80 tests (no key needed)
 cd apps/web && npm install && npm run build && cd ../..
 cd apps/api && npm install && npm run start:dev        # builds and starts the API + UI
 ```
@@ -187,7 +187,7 @@ One trial without the API: `cd runner && uv run python -m evalrunner.run_trial t
 
 | Command | Proves |
 |---|---|
-| `cd runner && uv run pytest` | 79 tests: every grader on reference/empty runs, harness loop, retries, isolation attacks, failure rules |
+| `cd runner && uv run pytest` | 80 tests: every grader on reference/empty runs, harness loop, retries, isolation attacks, failure rules |
 | `cd apps/api && npm test` | 2 suites, 15 tests: statistics (hand example, coverage simulation), an end-to-end experiment through the real runner |
 | `cd apps/web && npm run build` | UI type-checks and builds |
 | `cd runner && uv run python ../judge_validation/validate_judge.py` | judge accuracy and Cohen's kappa against labels |
@@ -201,7 +201,7 @@ One trial without the API: `cd runner && uv run python -m evalrunner.run_trial t
 | API, statistics, export; UI (runs, A/B builder, compare, trial, models & harnesses) | ✅ |
 | Design doc, known limits, experiment write-up with cost | ✅ |
 | Judge validation | 🟡 provisional: labels await human review (CHORE-5) |
-| Baseline vs Hermes experiment (102 trials) | 🟡 running |
+| Experiments: skills off vs on (B better, +0.36); baseline vs Hermes (no detectable difference, Hermes 18× tokens) | ✅ [docs/EXPERIMENT.md](docs/EXPERIMENT.md) |
 | Docker (`docker compose up`) with agent isolation | ⬜ CHORE-8 |
 | Video | ⬜ |
 
