@@ -11,7 +11,9 @@ COPY apps/web/ ./
 RUN npm run build
 
 FROM node:22-bookworm-slim AS api
-RUN npm install -g npm@11.6.2
+# better-sqlite3 compiles its native module when no prebuilt binary matches; tools stay in this build stage only
+RUN apt-get update && apt-get install -y --no-install-recommends python3 make g++ && rm -rf /var/lib/apt/lists/* \
+ && npm install -g npm@11.6.2
 WORKDIR /src/apps/api
 COPY apps/api/package.json apps/api/package-lock.json ./
 RUN npm ci
