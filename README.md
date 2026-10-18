@@ -52,8 +52,20 @@ Open **http://localhost:3000**. Results are stored in `data/evals.db` (SQLite).
 | `GROQ_API_KEY` | gpt-oss-20b / 120b, fast, baseline harness only (8k tokens/min) | console.groq.com |
 | none | local model: `ollama pull qwen3:8b` | your machine |
 
-> **One-command Docker setup (`docker compose up`) is not done yet** (open issue CHORE-8: the container must run agents as
-> an unprivileged user so they cannot read the answer keys). Until then, use the native setup above.
+### With Docker (one command)
+
+```bash
+cp .env.example .env            # add your keys
+docker compose up --build       # → http://localhost:3000
+```
+
+One container: API + UI + runner + Hermes Agent (`INSTALL_HERMES=0 docker compose up --build` to skip Hermes). Results live
+in the `evals-data` volume. Agents run as a per-trial unprivileged user that cannot read the answer keys. To record the code
+version on every trial: `CODE_SHA=$(git rev-parse --short HEAD) docker compose up --build`. For a local Ollama model, use
+base URL `http://host.docker.internal:11434/v1`.
+
+> **Status:** the Docker files are written but **not yet verified end to end** (Docker was not installed on the
+> development machine). The native setup above is verified.
 
 ## Run an experiment from the UI
 

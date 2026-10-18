@@ -24,7 +24,7 @@ from pathlib import Path
 
 import yaml
 
-from ..isolation import TOOL_CACHE, confine
+from ..isolation import AGENT_GID, TOOL_CACHE, confine, level
 from ..models import ProviderError
 from ..schema import Trace, TrialContext
 from .base import HarnessAdapter
@@ -61,6 +61,13 @@ class HermesHarness(HarnessAdapter):
                            env={**os.environ, "HERMES_HOME": str(BASE_HOME)})  # syncs deps; the model call itself may fail
             if not (BASE_HOME / "installs").is_dir():
                 raise ProviderError(f"could not prepare Hermes base home at {BASE_HOME}")
+        if level() == "unprivileged-user":
+            # agents (one user ID per trial, shared group) need to take locks/leases in the prepared base
+            for dirpath, _dirs, files in os.walk(BASE_HOME):
+                os.chown(dirpath, 0, AGENT_GID, follow_symlinks=False)
+                os.chmod(dirpath, 0o775)
+                for f in files:
+                    os.chown(os.path.join(dirpath, f), 0, AGENT_GID, follow_symlinks=False)
         m = re.search(r"v(\d+\.\d+\.\d+)", out)
         self.version = f"1+hermes-{m.group(1) if m else 'unknown'}"
 

@@ -1,0 +1,22 @@
+# docker compose up --build   →   http://localhost:3000
+# Optional: CODE_SHA=$(git rev-parse --short HEAD) docker compose up --build   (records the code version on every trial)
+services:
+  evals:
+    build:
+      context: .
+      args:
+        CODE_SHA: ${CODE_SHA:-unknown}
+        INSTALL_HERMES: ${INSTALL_HERMES:-1}
+    ports:
+      - "3000:3000"
+    env_file:
+      - path: .env          # API keys; only variable names are ever stored
+        required: false
+    environment:
+      CODE_SHA: ${CODE_SHA:-unknown}
+    extra_hosts:
+      - "host.docker.internal:host-gateway"   # reach Ollama on the host (base URL http://host.docker.internal:11434/v1)
+    volumes:
+      - evals-data:/app/data
+volumes:
+  evals-data:
