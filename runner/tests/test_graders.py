@@ -26,7 +26,7 @@ def mock(behavior):
 def test_task_set_shape():
     cats = [Task.load(p.parent).category for p in TASKS]
     assert len(TASKS) >= 20
-    assert {c: cats.count(c) for c in set(cats)} == {"code": 8, "exact": 3, "skill": 3, "memory": 3, "judge": 3}
+    assert {c: cats.count(c) for c in set(cats)} == {"code": 8, "exact": 3, "skill": 3, "memory": 6, "judge": 3}
 
 
 @pytest.mark.parametrize("task_dir", DETERMINISTIC, ids=lambda p: p.name)

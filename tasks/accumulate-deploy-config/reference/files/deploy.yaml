@@ -1,0 +1,5 @@
+db_host: db-prod-07.internal
+db_port: 5432
+db_user: app_readonly
+deploy_path: /opt/services/api
+deploy_branch: release/v2.8

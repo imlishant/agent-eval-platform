@@ -1,0 +1,30 @@
+id: accumulate-deploy-config
+category: memory
+sessions:
+- 'For the deployment system: the database host is db-prod-07.internal. Remember this for later. Nothing else to do now.'
+- 'Another detail for the deployment: the database port is 5432. Remember this for later. Nothing else to do now.'
+- 'One more deployment detail: the database user is app_readonly. Remember this for later. Nothing else to do now.'
+- 'Deployment detail: the deploy path is /opt/services/api. Remember this for later. Nothing else to do now.'
+- 'Final deployment detail: the deploy branch is release/v2.8. Remember this for later. Nothing else to do now.'
+- 'Create deploy.yaml with all the deployment details you were given across previous sessions. Use this exact format:
+
+  db_host: <value>
+  db_port: <value>
+  db_user: <value>
+  deploy_path: <value>
+  deploy_branch: <value>'
+graders:
+- type: file_check
+  path: deploy.yaml
+  contains:
+  - 'db-prod-07.internal'
+  - '5432'
+  - 'app_readonly'
+  - '/opt/services/api'
+  - 'release/v2.8'
+  regex:
+  - 'db_host:\s*db-prod-07\.internal'
+  - 'db_port:\s*5432'
+  - 'db_user:\s*app_readonly'
+  - 'deploy_path:\s*/opt/services/api'
+  - 'deploy_branch:\s*release/v2\.8'

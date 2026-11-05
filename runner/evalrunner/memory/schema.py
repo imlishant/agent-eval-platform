@@ -155,3 +155,23 @@ class MemoryStore:
         if not self.semantic_path.exists():
             return None
         return SemanticMemory.from_dict(json.loads(self.semantic_path.read_text()))
+
+    def snapshot(self) -> dict:
+        """Dump the full memory state for inspection (included in saved trial JSON)."""
+        result: dict = {"episodes": [], "semantic": None, "stm_sessions": []}
+        for ep in self.all_episodes():
+            result["episodes"].append(ep.to_dict())
+        sem = self.load_semantic()
+        if sem:
+            result["semantic"] = sem.to_dict()
+        if self.stm_dir.exists():
+            for p in sorted(self.stm_dir.glob("session-*.jsonl")):
+                session_entries = []
+                for line in p.read_text().splitlines():
+                    if line.strip():
+                        session_entries.append(json.loads(line))
+                result["stm_sessions"].append({
+                    "file": p.name,
+                    "entries": session_entries,
+                })
+        return result

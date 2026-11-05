@@ -184,6 +184,10 @@ class HermesHarness(HarnessAdapter):
             elif tiered:
                 # Tiered mode: clean the Hermes home (we manage memory ourselves) but keep our memory/ dir
                 shutil.rmtree(home, ignore_errors=True)
+
+        # Dump full memory state into the trace for post-run inspection
+        if tiered and mem_store:
+            trace.add("memory_snapshot", **mem_store.snapshot())
         return trace
 
     def _prepare_home(self, home: Path, ctx: TrialContext) -> None:

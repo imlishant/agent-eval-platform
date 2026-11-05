@@ -27,6 +27,7 @@ EVENT_TYPES = {
     "skill_used",    # agent used a skill
     "error",         # something went wrong (agent or infra)
     "final_answer",  # agent's last answer for a session
+    "memory_snapshot", # full dump of tiered memory state at end of trial
 }
 
 

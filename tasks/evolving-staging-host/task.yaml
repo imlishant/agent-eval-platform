@@ -1,0 +1,32 @@
+id: evolving-staging-host
+category: memory
+sessions:
+- 'Our staging environment is at stg-alpha.internal on port 8080. Remember this for later. Nothing else to do now.'
+- 'The staging API prefix is /api/v2. Remember this for later. Nothing else to do now.'
+- 'The health check endpoint on staging is /api/v2/healthz. Remember this for later. Nothing else to do now.'
+- 'IMPORTANT UPDATE: staging has been migrated. The new host is stg-beta.internal and the new port is 9443. The API prefix and health check path remain the same. Remember the updated details. Nothing else to do now.'
+- 'The staging auth token header name is X-Staging-Token. Remember this for later. Nothing else to do now.'
+- 'Create staging.env with the current staging configuration. Use this exact format, one per line:
+
+  STAGING_HOST=<host>
+  STAGING_PORT=<port>
+  API_PREFIX=<prefix>
+  HEALTH_CHECK=<full health check URL using host, port, and path>
+  AUTH_HEADER=<header name>'
+graders:
+- type: file_check
+  path: staging.env
+  contains:
+  - 'stg-beta.internal'
+  - '9443'
+  - '/api/v2'
+  - 'X-Staging-Token'
+  not_contains:
+  - 'stg-alpha.internal'
+  - '8080'
+  regex:
+  - 'STAGING_HOST=stg-beta\.internal'
+  - 'STAGING_PORT=9443'
+  - 'API_PREFIX=/api/v2'
+  - 'AUTH_HEADER=X-Staging-Token'
+  - 'HEALTH_CHECK=.*stg-beta\.internal.*9443.*/api/v2/healthz'

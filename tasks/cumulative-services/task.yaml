@@ -1,0 +1,26 @@
+id: cumulative-services
+category: memory
+sessions:
+- 'We are building a service registry. Add the first service: name is "auth", port is 3000, health endpoint is /health. Remember these details. Nothing else to do now.'
+- 'Add another service to the registry: name is "billing", port is 3001, health endpoint is /status. Remember these details. Nothing else to do now.'
+- 'Add another service: name is "notifications", port is 3002, health endpoint is /ping. Remember these details. Nothing else to do now.'
+- 'Create services.json containing an array of all the services from previous sessions. Each service object must have "name", "port", and "health" fields. Example format:
+
+  [
+    {"name": "...", "port": ..., "health": "..."},
+    ...
+  ]'
+graders:
+- type: file_check
+  path: services.json
+  json_fields: {}
+  contains:
+  - '"auth"'
+  - '"billing"'
+  - '"notifications"'
+  - '3000'
+  - '3001'
+  - '3002'
+  - '/health'
+  - '/status'
+  - '/ping'

@@ -1,0 +1,5 @@
+[
+  {"name": "auth", "port": 3000, "health": "/health"},
+  {"name": "billing", "port": 3001, "health": "/status"},
+  {"name": "notifications", "port": 3002, "health": "/ping"}
+]
