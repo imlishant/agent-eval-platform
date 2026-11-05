@@ -1,8 +1,13 @@
-"""Data shapes for the tiered memory system."""
+"""Data shapes and SQLite-backed store for the tiered memory system.
+
+STM and episodic tiers are deterministic (regex/pattern extraction).
+Only the semantic tier uses an LLM call.
+"""
 
 from __future__ import annotations
 
 import json
+import sqlite3
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -29,10 +34,10 @@ class STMEntry:
 class Episode:
     """Findings extracted from one session's STM (no LLM — pattern extraction)."""
     session_no: int
-    tool_calls: list[str]          # tool names invoked
-    findings: list[str]            # extracted facts/observations
-    files_written: list[str]       # files the agent wrote
-    errors: list[str]              # error messages encountered
+    tool_calls: list[str]
+    findings: list[str]
+    files_written: list[str]
+    errors: list[str]
     final_answer: str
     ts: float = field(default_factory=time.time)
 
@@ -85,93 +90,171 @@ class SemanticMemory:
         return "\n".join(lines)
 
 
+MEMORY_SCHEMA = """
+CREATE TABLE IF NOT EXISTS memory_stm (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trial_id INTEGER NOT NULL,
+  session INTEGER NOT NULL,
+  seq INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  ts REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS memory_episodes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trial_id INTEGER NOT NULL,
+  session INTEGER NOT NULL,
+  tool_calls TEXT NOT NULL,
+  findings TEXT NOT NULL,
+  files_written TEXT NOT NULL,
+  errors TEXT NOT NULL,
+  final_answer TEXT NOT NULL,
+  ts REAL NOT NULL,
+  UNIQUE(trial_id, session)
+);
+CREATE TABLE IF NOT EXISTS memory_semantic (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trial_id INTEGER NOT NULL,
+  insights TEXT NOT NULL,
+  patterns TEXT NOT NULL,
+  key_facts TEXT NOT NULL,
+  source_episodes TEXT NOT NULL,
+  ts REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS stm_by_trial ON memory_stm(trial_id, session);
+CREATE INDEX IF NOT EXISTS episodes_by_trial ON memory_episodes(trial_id);
+CREATE INDEX IF NOT EXISTS semantic_by_trial ON memory_semantic(trial_id);
+"""
+
+
 class MemoryStore:
-    """Manages the on-disk layout for one trial's tiered memory."""
+    """SQLite-backed store for one trial's tiered memory.
 
-    def __init__(self, base_dir: Path):
-        self.base = base_dir / "memory"
-        self.stm_dir = self.base / "stm"
-        self.episodes_dir = self.base / "episodes"
-        self.semantic_path = self.base / "semantic.json"
+    When db_path and trial_id are provided, all reads/writes go to the DB.
+    When they are None (e.g. standalone test runs), falls back to an in-memory
+    SQLite database scoped to this instance.
+    """
 
-    def ensure_dirs(self) -> None:
-        self.stm_dir.mkdir(parents=True, exist_ok=True)
-        self.episodes_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, db_path: str | None = None, trial_id: int | None = None):
+        self.trial_id = trial_id or 0
+        if db_path:
+            self._conn = sqlite3.connect(db_path, timeout=30)
+            self._conn.execute("PRAGMA journal_mode = WAL")
+        else:
+            self._conn = sqlite3.connect(":memory:")
+        self._conn.execute("PRAGMA foreign_keys = OFF")
+        self._conn.executescript(MEMORY_SCHEMA)
+
+    def close(self) -> None:
+        self._conn.close()
 
     # -- STM --
 
-    def stm_path(self, session: int) -> Path:
-        return self.stm_dir / f"session-{session}.jsonl"
-
     def append_stm(self, entry: STMEntry) -> None:
-        self.ensure_dirs()
-        with self.stm_path(entry.session).open("a") as f:
-            f.write(json.dumps(entry.to_dict()) + "\n")
+        self._conn.execute(
+            "INSERT INTO memory_stm (trial_id, session, seq, type, content, ts) VALUES (?, ?, ?, ?, ?, ?)",
+            (self.trial_id, entry.session, entry.seq, entry.type, entry.content, entry.ts),
+        )
+        self._conn.commit()
+
+    def append_stm_batch(self, entries: list[STMEntry]) -> None:
+        self._conn.executemany(
+            "INSERT INTO memory_stm (trial_id, session, seq, type, content, ts) VALUES (?, ?, ?, ?, ?, ?)",
+            [(self.trial_id, e.session, e.seq, e.type, e.content, e.ts) for e in entries],
+        )
+        self._conn.commit()
 
     def read_stm(self, session: int) -> list[STMEntry]:
-        p = self.stm_path(session)
-        if not p.exists():
-            return []
-        entries = []
-        for line in p.read_text().splitlines():
-            if line.strip():
-                entries.append(STMEntry.from_dict(json.loads(line)))
-        return entries
+        rows = self._conn.execute(
+            "SELECT seq, session, type, content, ts FROM memory_stm WHERE trial_id = ? AND session = ? ORDER BY seq",
+            (self.trial_id, session),
+        ).fetchall()
+        return [STMEntry(seq=r[0], session=r[1], type=r[2], content=r[3], ts=r[4]) for r in rows]
 
     # -- Episodes --
 
-    def episode_path(self, session: int) -> Path:
-        return self.episodes_dir / f"episode-{session}.json"
-
     def save_episode(self, ep: Episode) -> None:
-        self.ensure_dirs()
-        self.episode_path(ep.session_no).write_text(json.dumps(ep.to_dict(), indent=2))
+        self._conn.execute(
+            """INSERT OR REPLACE INTO memory_episodes
+               (trial_id, session, tool_calls, findings, files_written, errors, final_answer, ts)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+            (self.trial_id, ep.session_no, json.dumps(ep.tool_calls), json.dumps(ep.findings),
+             json.dumps(ep.files_written), json.dumps(ep.errors), ep.final_answer, ep.ts),
+        )
+        self._conn.commit()
 
     def load_episode(self, session: int) -> Episode | None:
-        p = self.episode_path(session)
-        if not p.exists():
+        row = self._conn.execute(
+            "SELECT session, tool_calls, findings, files_written, errors, final_answer, ts FROM memory_episodes WHERE trial_id = ? AND session = ?",
+            (self.trial_id, session),
+        ).fetchone()
+        if not row:
             return None
-        return Episode.from_dict(json.loads(p.read_text()))
+        return Episode(
+            session_no=row[0], tool_calls=json.loads(row[1]), findings=json.loads(row[2]),
+            files_written=json.loads(row[3]), errors=json.loads(row[4]), final_answer=row[5], ts=row[6],
+        )
 
     def all_episodes(self) -> list[Episode]:
-        if not self.episodes_dir.exists():
-            return []
-        eps = []
-        for p in sorted(self.episodes_dir.glob("episode-*.json")):
-            eps.append(Episode.from_dict(json.loads(p.read_text())))
-        return eps
+        rows = self._conn.execute(
+            "SELECT session, tool_calls, findings, files_written, errors, final_answer, ts FROM memory_episodes WHERE trial_id = ? ORDER BY session",
+            (self.trial_id,),
+        ).fetchall()
+        return [
+            Episode(session_no=r[0], tool_calls=json.loads(r[1]), findings=json.loads(r[2]),
+                    files_written=json.loads(r[3]), errors=json.loads(r[4]), final_answer=r[5], ts=r[6])
+            for r in rows
+        ]
 
     def episode_count(self) -> int:
-        if not self.episodes_dir.exists():
-            return 0
-        return len(list(self.episodes_dir.glob("episode-*.json")))
+        row = self._conn.execute(
+            "SELECT COUNT(*) FROM memory_episodes WHERE trial_id = ?", (self.trial_id,),
+        ).fetchone()
+        return row[0] if row else 0
 
     # -- Semantic --
 
     def save_semantic(self, sem: SemanticMemory) -> None:
-        self.semantic_path.write_text(json.dumps(sem.to_dict(), indent=2))
+        # Delete previous semantic for this trial (refresh = replace)
+        self._conn.execute("DELETE FROM memory_semantic WHERE trial_id = ?", (self.trial_id,))
+        self._conn.execute(
+            """INSERT INTO memory_semantic
+               (trial_id, insights, patterns, key_facts, source_episodes, ts)
+               VALUES (?, ?, ?, ?, ?, ?)""",
+            (self.trial_id, json.dumps(sem.insights), json.dumps(sem.patterns),
+             json.dumps(sem.key_facts), json.dumps(sem.source_episodes), sem.ts),
+        )
+        self._conn.commit()
 
     def load_semantic(self) -> SemanticMemory | None:
-        if not self.semantic_path.exists():
+        row = self._conn.execute(
+            "SELECT insights, patterns, key_facts, source_episodes, ts FROM memory_semantic WHERE trial_id = ? ORDER BY id DESC LIMIT 1",
+            (self.trial_id,),
+        ).fetchone()
+        if not row:
             return None
-        return SemanticMemory.from_dict(json.loads(self.semantic_path.read_text()))
+        return SemanticMemory(
+            insights=json.loads(row[0]), patterns=json.loads(row[1]),
+            key_facts=json.loads(row[2]), source_episodes=json.loads(row[3]), ts=row[4],
+        )
 
     def snapshot(self) -> dict:
-        """Dump the full memory state for inspection (included in saved trial JSON)."""
+        """Dump the full memory state for inspection."""
         result: dict = {"episodes": [], "semantic": None, "stm_sessions": []}
         for ep in self.all_episodes():
             result["episodes"].append(ep.to_dict())
         sem = self.load_semantic()
         if sem:
             result["semantic"] = sem.to_dict()
-        if self.stm_dir.exists():
-            for p in sorted(self.stm_dir.glob("session-*.jsonl")):
-                session_entries = []
-                for line in p.read_text().splitlines():
-                    if line.strip():
-                        session_entries.append(json.loads(line))
-                result["stm_sessions"].append({
-                    "file": p.name,
-                    "entries": session_entries,
-                })
+        # Group STM by session
+        rows = self._conn.execute(
+            "SELECT DISTINCT session FROM memory_stm WHERE trial_id = ? ORDER BY session",
+            (self.trial_id,),
+        ).fetchall()
+        for (session,) in rows:
+            entries = self.read_stm(session)
+            result["stm_sessions"].append({
+                "session": session,
+                "entries": [e.to_dict() for e in entries],
+            })
         return result

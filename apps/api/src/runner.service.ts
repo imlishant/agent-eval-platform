@@ -134,7 +134,7 @@ export class RunnerService {
   }
 
   /** Run one trial. Throws only if the runner process itself failed (treated as invalid by the caller). */
-  async runTrial(spec: { task_dir: string; config: any; trial_index: number }, timeoutMs: number): Promise<any> {
+  async runTrial(spec: { task_dir: string; config: any; trial_index: number; trial_id?: number; db_path?: string }, timeoutMs: number): Promise<any> {
     const dir = mkdtempSync(join(tmpdir(), 'spec-'));
     const file = join(dir, 'trial.json');
     writeFileSync(file, JSON.stringify(spec));

@@ -98,9 +98,7 @@ class HermesHarness(HarnessAdapter):
         trace = Trace()
         deadline = time.time() + s.timeout_s
 
-        mem_store = MemoryStore(ctx.home_dir) if tiered else None
-        if mem_store:
-            mem_store.ensure_dirs()
+        mem_store = MemoryStore(ctx.db_path, ctx.trial_id) if tiered else None
         # Tiered memory knobs (configurable via settings.extra)
         sem_threshold = s.extra.get("semantic_threshold", 5)
         sem_refresh = s.extra.get("semantic_refresh_interval", 5)
@@ -188,9 +186,8 @@ class HermesHarness(HarnessAdapter):
                 # Tiered mode: clean the Hermes home (we manage memory ourselves) but keep our memory/ dir
                 shutil.rmtree(home, ignore_errors=True)
 
-        # Dump full memory state into the trace for post-run inspection
-        if tiered and mem_store:
-            trace.add("memory_snapshot", **mem_store.snapshot())
+        if mem_store:
+            mem_store.close()
         return trace
 
     def _prepare_home(self, home: Path, ctx: TrialContext) -> None:

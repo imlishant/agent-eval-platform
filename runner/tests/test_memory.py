@@ -16,10 +16,10 @@ from evalrunner.schema import Trace
 
 
 @pytest.fixture
-def store(tmp_path):
-    s = MemoryStore(tmp_path)
-    s.ensure_dirs()
-    return s
+def store():
+    s = MemoryStore()  # in-memory SQLite, trial_id=0
+    yield s
+    s.close()
 
 
 # ── STM ──────────────────────────────────────────────────────────────────
@@ -44,7 +44,7 @@ class TestSTM:
         assert "message" in types
         assert "final_answer" in types
 
-    def test_stm_persists_to_disk(self, store):
+    def test_stm_persists(self, store):
         entry = STMEntry(seq=0, session=1, type="tool_call", content="tool_call: bash(cmd='ls')")
         store.append_stm(entry)
         loaded = store.read_stm(1)
@@ -53,6 +53,19 @@ class TestSTM:
 
     def test_stm_empty_session(self, store):
         assert store.read_stm(99) == []
+
+    def test_db_file_persistence(self, tmp_path):
+        db_file = str(tmp_path / "test.db")
+        s1 = MemoryStore(db_file, trial_id=42)
+        s1.append_stm(STMEntry(seq=0, session=1, type="tool_call", content="hello"))
+        s1.save_episode(Episode(session_no=1, tool_calls=["bash"], findings=["f1"],
+                                files_written=[], errors=[], final_answer="ok"))
+        s1.close()
+        s2 = MemoryStore(db_file, trial_id=42)
+        assert len(s2.read_stm(1)) == 1
+        assert s2.load_episode(1) is not None
+        assert s2.load_episode(1).findings == ["f1"]
+        s2.close()
 
 
 # ── Episodic ─────────────────────────────────────────────────────────────

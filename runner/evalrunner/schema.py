@@ -27,7 +27,6 @@ EVENT_TYPES = {
     "skill_used",    # agent used a skill
     "error",         # something went wrong (agent or infra)
     "final_answer",  # agent's last answer for a session
-    "memory_snapshot", # full dump of tiered memory state at end of trial
 }
 
 
@@ -149,6 +148,8 @@ class TrialContext:
     sandbox_dir: Path   # agent's working folder (copy of task fixtures)
     home_dir: Path      # agent's private HOME: memory, harness state
     trial_index: int = 0
+    trial_id: int | None = None    # DB row ID, set when launched by the API scheduler
+    db_path: str | None = None     # path to evals.db for memory persistence
 
 
 @dataclass

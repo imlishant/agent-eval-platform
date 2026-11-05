@@ -52,8 +52,41 @@ CREATE TABLE IF NOT EXISTS grades (
   trial_id INTEGER NOT NULL REFERENCES trials(id),
   grader TEXT NOT NULL, score REAL NOT NULL, passed INTEGER NOT NULL, reasoning TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS memory_stm (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trial_id INTEGER NOT NULL REFERENCES trials(id),
+  session INTEGER NOT NULL,
+  seq INTEGER NOT NULL,
+  type TEXT NOT NULL,
+  content TEXT NOT NULL,
+  ts REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS memory_episodes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trial_id INTEGER NOT NULL REFERENCES trials(id),
+  session INTEGER NOT NULL,
+  tool_calls TEXT NOT NULL,
+  findings TEXT NOT NULL,
+  files_written TEXT NOT NULL,
+  errors TEXT NOT NULL,
+  final_answer TEXT NOT NULL,
+  ts REAL NOT NULL,
+  UNIQUE(trial_id, session)
+);
+CREATE TABLE IF NOT EXISTS memory_semantic (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  trial_id INTEGER NOT NULL REFERENCES trials(id),
+  insights TEXT NOT NULL,
+  patterns TEXT NOT NULL,
+  key_facts TEXT NOT NULL,
+  source_episodes TEXT NOT NULL,
+  ts REAL NOT NULL
+);
 CREATE INDEX IF NOT EXISTS trials_by_status ON trials(status, not_before);
 CREATE INDEX IF NOT EXISTS trials_by_experiment ON trials(experiment_id);
+CREATE INDEX IF NOT EXISTS stm_by_trial ON memory_stm(trial_id, session);
+CREATE INDEX IF NOT EXISTS episodes_by_trial ON memory_episodes(trial_id);
+CREATE INDEX IF NOT EXISTS semantic_by_trial ON memory_semantic(trial_id);
 `;
 
 @Injectable()

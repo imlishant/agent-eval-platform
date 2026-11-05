@@ -2,7 +2,7 @@ import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/commo
 import { readFileSync } from 'fs';
 import { join } from 'path';
 import { DbService } from './db.service';
-import { PRICES_PATH, REPO } from './paths';
+import { DB_PATH, PRICES_PATH, REPO } from './paths';
 import { RunnerService } from './runner.service';
 
 /** Invalid (infrastructure) failures are retried this many times in total, with a growing wait. */
@@ -92,7 +92,7 @@ export class SchedulerService implements OnModuleInit, OnModuleDestroy {
     let result: any;
     try {
       result = await this.runner.runTrial(
-        { task_dir: join(REPO, 'tasks', taskId), config, trial_index: trialIndex },
+        { task_dir: join(REPO, 'tasks', taskId), config, trial_index: trialIndex, trial_id: id, db_path: DB_PATH },
         timeoutMs,
       );
     } catch (e: any) {

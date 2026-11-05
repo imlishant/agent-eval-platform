@@ -20,9 +20,9 @@ def collect_stm(trace: Trace, session: int, store: MemoryStore) -> list[STMEntry
         content = _format_event(ev)
         if not content:
             continue
-        entry = STMEntry(seq=ev.seq, session=session, type=ev.type, content=content, ts=ev.ts)
-        store.append_stm(entry)
-        entries.append(entry)
+        entries.append(STMEntry(seq=ev.seq, session=session, type=ev.type, content=content, ts=ev.ts))
+    if entries:
+        store.append_stm_batch(entries)
     return entries
 
 

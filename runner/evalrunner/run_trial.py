@@ -33,7 +33,8 @@ def run(spec: dict) -> dict:
             "isolation": level(), "code_version": code_version()}
 
     with trial_dirs(task) as (sandbox, home):
-        ctx = TrialContext(task, config, sandbox, home, meta["trial_index"])
+        ctx = TrialContext(task, config, sandbox, home, meta["trial_index"],
+                          trial_id=spec.get("trial_id"), db_path=spec.get("db_path"))
         try:
             trace = harness.run_trial(ctx)
             grades = run_graders(task.graders, trace, sandbox, task)  # judge can hit the provider too
