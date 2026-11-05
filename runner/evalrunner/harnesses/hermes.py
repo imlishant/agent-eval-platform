@@ -8,6 +8,13 @@ Per session: one `hermes chat -q <prompt> --oneshot --format stream-json` proces
 Trace:      Hermes prints JSON events (tool_use, tool_result, text, result); we map them onto our
             schema. Memory writes are found by diffing $HERMES_HOME/memories before and after a session.
 
+Memory modes:
+  "off"    — fresh Hermes home per session, no memory
+  "on"     — Hermes native memory (shared home, memories/ folder)
+  "tiered" — our three-tier module: STM (tool calls), episodic (pattern-extracted findings),
+             semantic (LLM-distilled insights after 5 episodes). Hermes native memory disabled;
+             warm-start injected into the prompt.
+
 Quirks (see docs/LIMITS.md): Hermes has its own large system prompt (~29k tokens) and 58 bundled
 skills that are always present; it has no temperature setting; it needs a model with >= 64k context.
 """
@@ -25,7 +32,12 @@ from pathlib import Path
 import yaml
 
 from ..isolation import AGENT_GID, TOOL_CACHE, confine, level
-from ..models import ProviderError
+from ..memory.episodic import consolidate_episode
+from ..memory.schema import MemoryStore
+from ..memory.semantic import consolidate_semantic
+from ..memory.stm import collect_stm
+from ..memory.warmstart import build_warmstart
+from ..models import ProviderError, get_model
 from ..schema import Trace, TrialContext
 from .base import HarnessAdapter
 
@@ -77,6 +89,7 @@ class HermesHarness(HarnessAdapter):
     def run_trial(self, ctx: TrialContext) -> Trace:
         s, model = ctx.config.settings, ctx.config.model
         memory_on = s.memory == "on"
+        tiered = s.memory == "tiered"
         # minimal env: only this provider's key, so `env` inside the agent cannot reveal other secrets
         env = {"PATH": os.environ.get("PATH", "/usr/bin:/bin"), "HOME": str(ctx.home_dir), "LANG": "C.UTF-8"}
         if model.api_key_env:
@@ -84,15 +97,33 @@ class HermesHarness(HarnessAdapter):
         trace = Trace()
         deadline = time.time() + s.timeout_s
 
+        mem_store = MemoryStore(ctx.home_dir) if tiered else None
+        if mem_store:
+            mem_store.ensure_dirs()
+
         for session_no, prompt in enumerate(ctx.task.sessions, start=1):
             trace.session = session_no
             trace.add("message", role="user", text=prompt)
+
+            # --- Tiered: inject warm-start into prompt ---
+            effective_prompt = prompt
+            if tiered and mem_store:
+                warmstart = build_warmstart(mem_store, session_no)
+                if warmstart:
+                    trace.add("memory_read", tier="warmstart", content=warmstart)
+                    effective_prompt = f"{warmstart}\n\n---\n\n{prompt}"
+
             # memory on: one Hermes home for the whole trial (memories + session history carry over).
-            # memory off: a fresh home per session; Hermes can search its stored past sessions even with
-            # memory disabled, so a shared home would leak session 1 into session 2.
-            home = ctx.home_dir / (".hermes" if memory_on else f".hermes-s{session_no}")
+            # memory off / tiered: a fresh home per session; Hermes can search its stored past sessions
+            # even with memory disabled, so a shared home would leak session 1 into session 2.
+            if memory_on:
+                home = ctx.home_dir / ".hermes"
+            else:
+                home = ctx.home_dir / f".hermes-s{session_no}"
             self._prepare_home(home, ctx)
             env["HERMES_HOME"] = str(home)
+
+            # --- Native memory tracking (on mode only) ---
             before = _snapshot(home / "memories")
             if memory_on and any(before.values()):
                 trace.add("memory_read", files=sorted(k for k, v in before.items() if v),
@@ -103,7 +134,7 @@ class HermesHarness(HarnessAdapter):
                 trace.add("error", kind="timeout", message=f"trial exceeded {s.timeout_s}s")
                 trace.add("final_answer", text="")
                 break
-            cmd = [self.bin, "chat", "-q", prompt, "--oneshot", "--format", "stream-json",
+            cmd = [self.bin, "chat", "-q", effective_prompt, "--oneshot", "--format", "stream-json",
                    "--in", str(ctx.sandbox_dir), "--provider", PROVIDER_NAME, "-m", model.id,
                    "--max-turns", str(s.max_steps), "--run-budget", str(remaining)]
             try:
@@ -115,13 +146,37 @@ class HermesHarness(HarnessAdapter):
                 break
 
             self._map_events(proc.stdout, proc.stderr, trace)
-            for name, text in _snapshot(home / "memories").items():
-                old = before.get(name, "")
-                if text != old:
-                    trace.add("memory_write", file=name, note=text[len(old):] if text.startswith(old) else text)
-            if not memory_on:
+
+            # --- Native memory diff (on mode) ---
+            if memory_on:
+                for name, text in _snapshot(home / "memories").items():
+                    old = before.get(name, "")
+                    if text != old:
+                        trace.add("memory_write", file=name, note=text[len(old):] if text.startswith(old) else text)
+
+            # --- Tiered: collect STM, consolidate episode, maybe semantic ---
+            if tiered and mem_store:
+                collect_stm(trace, session_no, mem_store)
+                ep = consolidate_episode(session_no, mem_store)
+                trace.add("memory_write", tier="episodic", session=session_no,
+                          note=ep.as_text())
+                if mem_store.episode_count() >= 5:
+                    try:
+                        llm = get_model(ctx.config.model)
+                        sem = consolidate_semantic(mem_store, llm)
+                        if sem:
+                            trace.add("memory_write", tier="semantic",
+                                      note=sem.as_text())
+                    except Exception as e:
+                        trace.add("error", kind="semantic_consolidation",
+                                  message=str(e)[:300])
+
+            if not memory_on and not tiered:
                 # Hermes writes every prompt into its home (sessions/, logs/, spawn-ledger.json). With memory off,
                 # a later session must not be able to read them, so this session's home goes now (FIX-21).
+                shutil.rmtree(home, ignore_errors=True)
+            elif tiered:
+                # Tiered mode: clean the Hermes home (we manage memory ourselves) but keep our memory/ dir
                 shutil.rmtree(home, ignore_errors=True)
         return trace
 
@@ -138,7 +193,7 @@ class HermesHarness(HarnessAdapter):
         config = {
             "model": {"default": model.id, "provider": PROVIDER_NAME},
             "providers": {PROVIDER_NAME: provider},
-            "memory": {"memory_enabled": s.memory == "on", "user_profile_enabled": s.memory == "on"},
+            "memory": {"memory_enabled": s.memory == "on", "user_profile_enabled": s.memory == "on"},  # tiered manages its own
         }
         (home / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=False))
         for name in s.skills:  # our skill docs in Hermes's format: skills/<name>/SKILL.md with frontmatter

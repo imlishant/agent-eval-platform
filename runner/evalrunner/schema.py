@@ -41,7 +41,7 @@ class ModelSpec:
 @dataclass
 class Settings:
     skills: list[str] = field(default_factory=list)
-    memory: str = "off"            # "off" | "on"
+    memory: str = "off"            # "off" | "on" | "tiered"
     tools: list[str] = field(default_factory=lambda: ["bash", "read_file", "write_file"])
     temperature: float = 0.7
     max_steps: int = 20
