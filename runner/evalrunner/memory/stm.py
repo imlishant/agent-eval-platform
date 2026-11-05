@@ -44,6 +44,8 @@ def _format_event(ev: TraceEvent) -> str:
     if ev.type == "message":
         role = p.get("role", "")
         text = p.get("text", "")[:500]
+        if role == "user" and text:
+            return f"user: {text}"
         if role == "assistant" and text:
             return f"assistant: {text}"
         return ""

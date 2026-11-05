@@ -37,7 +37,7 @@ class TestSTM:
         trace.add("model_call", input_tokens=100, output_tokens=50, latency_ms=500, attempts=1)
 
         entries = collect_stm(trace, 1, store)
-        assert len(entries) == 4  # tool_call, tool_result, assistant message, final_answer
+        assert len(entries) == 5  # user message, tool_call, tool_result, assistant message, final_answer
         types = [e.type for e in entries]
         assert "tool_call" in types
         assert "tool_result" in types

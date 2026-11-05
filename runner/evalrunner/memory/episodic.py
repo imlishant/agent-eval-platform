@@ -9,11 +9,17 @@ import re
 
 from .schema import Episode, MemoryStore, STMEntry
 
-# Patterns to extract factual content from tool results and assistant messages
+# Patterns to extract factual content from user prompts, assistant messages, and tool results.
+# Each pattern captures a group that becomes a finding.
 FACT_PATTERNS = [
+    # "the X is Y" — captures value up to sentence end, "Remember", or list separator
+    re.compile(r"(?:the|our|its)\s+([\w\s]{2,30}?)\s+(?:is|are|=)\s+(\S(?:(?!\.\s|[,;]|\bRemember\b|\bNothing\b).)*\S)", re.I),
+    # "remember/note/important: ..."
     re.compile(r"(?:remember|note|important|convention|rule|always|never|must)[:\s]+(.{10,200})", re.I),
-    re.compile(r"(?:the|our)\s+(?:server|host|port|url|endpoint|password|code\s*word|key)\s+(?:is|=)\s+(\S+.{0,100})", re.I),
-    re.compile(r"(?:set|use|changed?\s+to|updated?\s+to)\s+(\S+.{5,150})", re.I),
+    # "set/use/changed to/updated to ..."
+    re.compile(r"(?:set|use|changed?\s+to|updated?\s+to|migrated?\s+to|moved?\s+to)\s+(\S.{5,150})", re.I),
+    # "name is X" for service/config definitions — two groups: (key, value)
+    re.compile(r"((?:name|port|host|path|branch|endpoint|prefix|token|header|user))\s+(?:is|=|:)\s+(\S.{0,100}?)(?:\.|,|;|\s*$)", re.I | re.M),
 ]
 
 FILE_WRITE_PATTERN = re.compile(r"tool_call: (?:write_file|bash)\(.*?(?:path|>)\s*=?\s*['\"]?([^\s,'\")\]]+)")
@@ -98,14 +104,27 @@ def _extract_file_writes(content: str, out: list[str]) -> None:
             out.append(path)
 
 
+NOISE_PHRASES = {"this for later", "assistant: noted", "assistant: done", "assistant: ok",
+                  "nothing else to do", "nothing else to do now", "for later sessions"}
+
+
 def _extract_facts(content: str) -> list[str]:
     facts = []
     for pat in FACT_PATTERNS:
         for m in pat.finditer(content):
-            fact = m.group(1).strip().rstrip(".")
-            if len(fact) >= 5:
+            groups = m.groups()
+            if len(groups) >= 2 and groups[1]:
+                fact = f"{groups[0].strip()} is {groups[1].strip()}".rstrip(".")
+            else:
+                fact = groups[0].strip().rstrip(".")
+            if len(fact) >= 3 and not _is_noise(fact):
                 facts.append(fact)
     return facts
+
+
+def _is_noise(fact: str) -> bool:
+    lower = fact.lower().strip()
+    return any(lower.startswith(n) or lower == n for n in NOISE_PHRASES)
 
 
 def _extract_from_assistant(content: str) -> list[str]:
@@ -114,6 +133,9 @@ def _extract_from_assistant(content: str) -> list[str]:
     kv = re.findall(r"(\b\w[\w\s]{2,20})\s*(?:is|=|:)\s*([^\n,;]{3,100})", content)
     for key, val in kv:
         key, val = key.strip(), val.strip()
-        if len(val) >= 3 and not val.startswith("(") and key.lower() not in ("this", "that", "it", "which", "what", "there"):
-            facts.append(f"{key}: {val}")
+        if len(val) >= 3 and not val.startswith("(") and key.lower() not in (
+                "this", "that", "it", "which", "what", "there", "nothing", "assistant"):
+            fact = f"{key}: {val}"
+            if not _is_noise(fact):
+                facts.append(fact)
     return facts[:5]
