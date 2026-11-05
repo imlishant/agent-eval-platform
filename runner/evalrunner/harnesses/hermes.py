@@ -34,7 +34,7 @@ import yaml
 from ..isolation import AGENT_GID, TOOL_CACHE, confine, level
 from ..memory.episodic import consolidate_episode
 from ..memory.schema import MemoryStore
-from ..memory.semantic import consolidate_semantic
+from ..memory.semantic import consolidate_semantic, should_refresh_semantic
 from ..memory.stm import collect_stm
 from ..memory.warmstart import build_warmstart
 from ..models import ProviderError, get_model
@@ -100,6 +100,10 @@ class HermesHarness(HarnessAdapter):
         mem_store = MemoryStore(ctx.home_dir) if tiered else None
         if mem_store:
             mem_store.ensure_dirs()
+        # Tiered memory knobs (configurable via settings.extra)
+        sem_threshold = s.extra.get("semantic_threshold", 5)
+        sem_refresh = s.extra.get("semantic_refresh_interval", 5)
+        warmstart_episodes = s.extra.get("warmstart_episodes", 3)
 
         for session_no, prompt in enumerate(ctx.task.sessions, start=1):
             trace.session = session_no
@@ -108,7 +112,7 @@ class HermesHarness(HarnessAdapter):
             # --- Tiered: inject warm-start into prompt ---
             effective_prompt = prompt
             if tiered and mem_store:
-                warmstart = build_warmstart(mem_store, session_no)
+                warmstart = build_warmstart(mem_store, session_no, max_recent=warmstart_episodes)
                 if warmstart:
                     trace.add("memory_read", tier="warmstart", content=warmstart)
                     effective_prompt = f"{warmstart}\n\n---\n\n{prompt}"
@@ -154,16 +158,18 @@ class HermesHarness(HarnessAdapter):
                     if text != old:
                         trace.add("memory_write", file=name, note=text[len(old):] if text.startswith(old) else text)
 
-            # --- Tiered: collect STM, consolidate episode, maybe semantic ---
+            # --- Tiered: collect STM, consolidate episode, maybe refresh semantic ---
             if tiered and mem_store:
                 collect_stm(trace, session_no, mem_store)
                 ep = consolidate_episode(session_no, mem_store)
                 trace.add("memory_write", tier="episodic", session=session_no,
                           note=ep.as_text())
-                if mem_store.episode_count() >= 5:
+                if should_refresh_semantic(mem_store, threshold=sem_threshold,
+                                           refresh_interval=sem_refresh):
                     try:
                         llm = get_model(ctx.config.model)
-                        sem = consolidate_semantic(mem_store, llm)
+                        sem = consolidate_semantic(mem_store, llm,
+                                                   episode_window=sem_threshold)
                         if sem:
                             trace.add("memory_write", tier="semantic",
                                       note=sem.as_text())

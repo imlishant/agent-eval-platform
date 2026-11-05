@@ -30,16 +30,32 @@ Respond in EXACTLY this JSON format, nothing else:
 Episodes:
 """
 
-EPISODE_WINDOW = 5
+DEFAULT_SEMANTIC_THRESHOLD = 5
+DEFAULT_SEMANTIC_REFRESH = 5
 
 
-def consolidate_semantic(store: MemoryStore, model: ModelAdapter) -> SemanticMemory | None:
-    """Distill the latest episodes into semantic memory. Returns None if fewer than 5 episodes."""
+def should_refresh_semantic(store: MemoryStore, threshold: int = DEFAULT_SEMANTIC_THRESHOLD,
+                            refresh_interval: int = DEFAULT_SEMANTIC_REFRESH) -> bool:
+    """True when semantic memory should be (re)generated: at threshold, then every refresh_interval."""
+    count = store.episode_count()
+    if count < threshold:
+        return False
+    sem = store.load_semantic()
+    if sem is None:
+        return True
+    # Refresh every N episodes after the initial generation
+    episodes_since = count - max(sem.source_episodes) if sem.source_episodes else count
+    return episodes_since >= refresh_interval
+
+
+def consolidate_semantic(store: MemoryStore, model: ModelAdapter,
+                         episode_window: int = DEFAULT_SEMANTIC_THRESHOLD) -> SemanticMemory | None:
+    """Distill the latest episodes into semantic memory (replaces previous semantic)."""
     episodes = store.all_episodes()
-    if len(episodes) < EPISODE_WINDOW:
+    if len(episodes) < episode_window:
         return None
 
-    recent = episodes[-EPISODE_WINDOW:]
+    recent = episodes[-episode_window:]
     prompt = DISTILL_PROMPT + "\n\n".join(ep.as_text() for ep in recent)
 
     messages = [

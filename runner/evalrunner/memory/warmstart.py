@@ -1,8 +1,8 @@
 """Warm-start builder: decides what memory to inject into a session's context.
 
 Logic:
-  - Episodes >= 5 and semantic.json exists → use semantic summary
-  - Episodes 1..4 → use up to 3 most recent episode summaries
+  - Always include up to `max_recent` latest episode summaries
+  - If semantic memory exists, prepend it before the episodes
   - No episodes (session 1) → empty string
 """
 
@@ -10,25 +10,27 @@ from __future__ import annotations
 
 from .schema import MemoryStore
 
-MAX_RECENT_EPISODES = 3
+DEFAULT_WARMSTART_EPISODES = 3
 
 
-def build_warmstart(store: MemoryStore, current_session: int) -> str:
+def build_warmstart(store: MemoryStore, current_session: int,
+                    max_recent: int = DEFAULT_WARMSTART_EPISODES) -> str:
     """Return the text to inject into the agent's context as memory."""
+    parts: list[str] = []
+
     sem = store.load_semantic()
+    if sem is not None:
+        parts.append(_format_semantic(sem))
+
     episode_count = store.episode_count()
-
-    if episode_count >= 5 and sem is not None:
-        return _format_semantic(sem)
-
     if episode_count > 0:
-        return _format_recent_episodes(store, episode_count)
+        parts.append(_format_recent_episodes(store, max_recent))
 
-    return ""
+    return "\n\n".join(parts)
 
 
 def _format_semantic(sem) -> str:
-    lines = ["[Memory — consolidated from recent sessions]"]
+    lines = ["[Consolidated memory]"]
     if sem.key_facts:
         lines.append("\nKey facts:")
         for f in sem.key_facts:
@@ -44,10 +46,10 @@ def _format_semantic(sem) -> str:
     return "\n".join(lines)
 
 
-def _format_recent_episodes(store: MemoryStore, episode_count: int) -> str:
+def _format_recent_episodes(store: MemoryStore, max_recent: int) -> str:
     episodes = store.all_episodes()
-    recent = episodes[-MAX_RECENT_EPISODES:]
-    lines = [f"[Memory — last {len(recent)} session(s)]"]
+    recent = episodes[-max_recent:]
+    lines = [f"[Recent sessions ({len(recent)})]"]
     for ep in recent:
         lines.append("")
         lines.append(ep.as_text())

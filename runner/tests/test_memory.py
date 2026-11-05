@@ -9,7 +9,7 @@ import pytest
 
 from evalrunner.memory.episodic import consolidate_episode
 from evalrunner.memory.schema import Episode, MemoryStore, SemanticMemory, STMEntry
-from evalrunner.memory.semantic import _parse_response, consolidate_semantic
+from evalrunner.memory.semantic import _parse_response, consolidate_semantic, should_refresh_semantic
 from evalrunner.memory.stm import collect_stm
 from evalrunner.memory.warmstart import build_warmstart
 from evalrunner.schema import Trace
@@ -129,13 +129,32 @@ class TestSemantic:
         result = _parse_response("no json here at all")
         assert result == {"key_facts": [], "insights": [], "patterns": []}
 
-    def test_needs_5_episodes(self, store):
+    def test_needs_threshold_episodes(self, store):
         for i in range(1, 4):
             store.save_episode(Episode(session_no=i, tool_calls=[], findings=[f"fact-{i}"],
                                        files_written=[], errors=[], final_answer=""))
-        # Mock model not needed — should return None before calling it
         result = consolidate_semantic(store, model=None)
         assert result is None
+
+    def test_custom_threshold(self, store):
+        for i in range(1, 4):
+            store.save_episode(Episode(session_no=i, tool_calls=[], findings=[f"fact-{i}"],
+                                       files_written=[], errors=[], final_answer=""))
+
+        class MockModel:
+            def chat(self, messages, tools, *, temperature, max_tokens):
+                class R:
+                    text = '{"key_facts": ["f"], "insights": ["i"], "patterns": ["p"]}'
+                    tool_calls = []
+                    input_tokens = 10
+                    output_tokens = 10
+                    latency_ms = 10
+                    attempts = 1
+                return R()
+
+        sem = consolidate_semantic(store, MockModel(), episode_window=3)
+        assert sem is not None
+        assert sem.source_episodes == [1, 2, 3]
 
     def test_consolidate_with_mock_model(self, store):
         for i in range(1, 6):
@@ -166,6 +185,38 @@ class TestSemantic:
         assert loaded is not None
         assert loaded.key_facts == ["f1"]
 
+    def test_should_refresh_not_before_threshold(self, store):
+        for i in range(1, 4):
+            store.save_episode(Episode(session_no=i, tool_calls=[], findings=[],
+                                       files_written=[], errors=[], final_answer=""))
+        assert not should_refresh_semantic(store, threshold=5, refresh_interval=5)
+
+    def test_should_refresh_at_threshold(self, store):
+        for i in range(1, 6):
+            store.save_episode(Episode(session_no=i, tool_calls=[], findings=[],
+                                       files_written=[], errors=[], final_answer=""))
+        assert should_refresh_semantic(store, threshold=5, refresh_interval=5)
+
+    def test_should_not_refresh_right_after(self, store):
+        for i in range(1, 7):
+            store.save_episode(Episode(session_no=i, tool_calls=[], findings=[],
+                                       files_written=[], errors=[], final_answer=""))
+        sem = SemanticMemory(insights=[], patterns=[], key_facts=[],
+                             source_episodes=[1, 2, 3, 4, 5])
+        store.save_semantic(sem)
+        # Episode 6 is 1 past max source episode 5, but refresh_interval is 5
+        assert not should_refresh_semantic(store, threshold=5, refresh_interval=5)
+
+    def test_should_refresh_after_interval(self, store):
+        for i in range(1, 11):
+            store.save_episode(Episode(session_no=i, tool_calls=[], findings=[],
+                                       files_written=[], errors=[], final_answer=""))
+        sem = SemanticMemory(insights=[], patterns=[], key_facts=[],
+                             source_episodes=[1, 2, 3, 4, 5])
+        store.save_semantic(sem)
+        # Episode 10: 5 episodes past max source (5), so refresh
+        assert should_refresh_semantic(store, threshold=5, refresh_interval=5)
+
 
 # ── Warmstart ────────────────────────────────────────────────────────────
 
@@ -180,9 +231,10 @@ class TestWarmstart:
         text = build_warmstart(store, 4)
         assert "fact-1" in text
         assert "fact-3" in text
-        assert "[Memory" in text
+        assert "Recent sessions" in text
 
-    def test_uses_semantic_after_5_episodes(self, store):
+    def test_semantic_plus_episodes_after_threshold(self, store):
+        """After semantic exists, warmstart includes BOTH semantic and recent episodes."""
         for i in range(1, 6):
             store.save_episode(Episode(session_no=i, tool_calls=[], findings=[f"fact-{i}"],
                                        files_written=[], errors=[], final_answer=""))
@@ -190,15 +242,28 @@ class TestWarmstart:
                              key_facts=["distilled-fact"], source_episodes=[1, 2, 3, 4, 5])
         store.save_semantic(sem)
         text = build_warmstart(store, 6)
+        # Semantic present
         assert "distilled-fact" in text
         assert "big-insight" in text
-        assert "consolidated" in text.lower() or "Memory" in text
+        assert "Consolidated" in text
+        # Episodes also present
+        assert "Recent sessions" in text
+        assert "fact-5" in text
 
     def test_falls_back_to_episodes_if_no_semantic(self, store):
         for i in range(1, 6):
             store.save_episode(Episode(session_no=i, tool_calls=[], findings=[f"fact-{i}"],
                                        files_written=[], errors=[], final_answer=""))
-        # No semantic.json
         text = build_warmstart(store, 6)
         assert "fact-" in text
-        assert "session" in text.lower()
+        assert "Recent sessions" in text
+        assert "Consolidated" not in text
+
+    def test_max_recent_is_configurable(self, store):
+        for i in range(1, 8):
+            store.save_episode(Episode(session_no=i, tool_calls=[], findings=[f"fact-{i}"],
+                                       files_written=[], errors=[], final_answer=""))
+        text = build_warmstart(store, 8, max_recent=2)
+        assert "fact-7" in text
+        assert "fact-6" in text
+        assert "fact-5" not in text
