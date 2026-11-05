@@ -32,6 +32,7 @@ from pathlib import Path
 import yaml
 
 from ..isolation import AGENT_GID, TOOL_CACHE, confine, level
+from ..sandbox import reset_sandbox
 from ..memory.episodic import consolidate_episode
 from ..memory.schema import MemoryStore
 from ..memory.semantic import consolidate_semantic, should_refresh_semantic
@@ -106,6 +107,8 @@ class HermesHarness(HarnessAdapter):
         warmstart_episodes = s.extra.get("warmstart_episodes", 3)
 
         for session_no, prompt in enumerate(ctx.task.sessions, start=1):
+            if session_no > 1:
+                reset_sandbox(ctx.sandbox_dir, ctx.task)
             trace.session = session_no
             trace.add("message", role="user", text=prompt)
 

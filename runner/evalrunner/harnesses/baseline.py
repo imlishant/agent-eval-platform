@@ -16,6 +16,7 @@ import time
 from pathlib import Path
 
 from ..models import ModelOutputError, get_model
+from ..sandbox import reset_sandbox
 from ..schema import Trace, TrialContext
 from . import tools as T
 from .base import HarnessAdapter
@@ -58,6 +59,8 @@ class BaselineHarness(HarnessAdapter):
         tool_schemas = [T.schema(n) for n in tool_names]
 
         for session_no, prompt in enumerate(ctx.task.sessions, start=1):
+            if session_no > 1:
+                reset_sandbox(ctx.sandbox_dir, ctx.task)
             trace.session = session_no
             system = SYSTEM
             if s.skills:
